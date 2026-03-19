@@ -1,0 +1,105 @@
+# Reusable reporting workflow
+#
+# Called by source repos to submit dogfood records to dogfood-labs.
+# Does exactly three things:
+# 1. Reads the submission file
+# 2. Runs a local precheck for fast feedback
+# 3. Fires repository_dispatch to dogfood-labs
+#
+# Does NOT compute policy, verdicts, or anything the verifier owns.
+
+name: Report dogfood submission
+
+on:
+  workflow_call:
+    inputs:
+      submission_path:
+        description: "Path to submission JSON file (relative to caller workspace)"
+        required: true
+        type: string
+      target_repo:
+        description: "Target dogfood-labs repo"
+        required: false
+        type: string
+        default: "mcp-tool-shop-org/dogfood-labs"
+      event_type:
+        description: "repository_dispatch event type"
+        required: false
+        type: string
+        default: "dogfood_submission"
+    secrets:
+      DOGFOOD_TOKEN:
+        description: "PAT or app token with repo scope to fire repository_dispatch on target_repo"
+        required: true
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate submission file exists
+        run: |
+          if [ ! -f "${{ inputs.submission_path }}" ]; then
+            echo "::error::Submission file not found: ${{ inputs.submission_path }}"
+            exit 1
+          fi
+
+      - name: Validate JSON
+        run: |
+          if ! jq empty "${{ inputs.submission_path }}" 2>/dev/null; then
+            echo "::error::Submission file is not valid JSON: ${{ inputs.submission_path }}"
+            exit 1
+          fi
+
+      - name: Precheck submission
+        run: |
+          # Fast local checks before dispatching
+          SUBMISSION=$(cat "${{ inputs.submission_path }}")
+
+          # Must have required top-level fields
+          for field in schema_version run_id repo overall_verdict; do
+            if [ "$(echo "$SUBMISSION" | jq -r ".$field // empty")" = "" ]; then
+              echo "::error::Missing required field: $field"
+              exit 1
+            fi
+          done
+
+          # overall_verdict must be a string, not object
+          VERDICT_TYPE=$(echo "$SUBMISSION" | jq -r '.overall_verdict | type')
+          if [ "$VERDICT_TYPE" != "string" ]; then
+            echo "::error::overall_verdict must be a string (got $VERDICT_TYPE)"
+            exit 1
+          fi
+
+          # Block verifier-owned fields
+          for field in policy_version verification; do
+            if [ "$(echo "$SUBMISSION" | jq "has(\"$field\")")" = "true" ]; then
+              echo "::error::Submission must not contain verifier-owned field: $field"
+              exit 1
+            fi
+          done
+
+          # Must have at least one scenario_result
+          COUNT=$(echo "$SUBMISSION" | jq '.scenario_results | length')
+          if [ "$COUNT" -lt 1 ]; then
+            echo "::error::scenario_results must have at least one entry"
+            exit 1
+          fi
+
+          echo "Precheck passed"
+
+      - name: Dispatch to dogfood-labs
+        env:
+          GH_TOKEN: ${{ secrets.DOGFOOD_TOKEN }}
+        run: |
+          SUBMISSION=$(cat "${{ inputs.submission_path }}")
+          RUN_ID=$(echo "$SUBMISSION" | jq -r '.run_id')
+
+          gh api repos/${{ inputs.target_repo }}/dispatches \
+            -f "event_type=${{ inputs.event_type }}" \
+            -f "client_payload[submission]=$SUBMISSION" \
+            --silent
+
+          echo "Dispatched submission $RUN_ID to ${{ inputs.target_repo }}"
+          echo "### Dogfood Submission Dispatched" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Run ID:** $RUN_ID" >> "$GITHUB_STEP_SUMMARY"
+          echo "- **Target:** ${{ inputs.target_repo }}" >> "$GITHUB_STEP_SUMMARY"

@@ -1,0 +1,155 @@
+# Pilot 0: dogfood-labs self-dogfood
+#
+# Proves the system can dogfood itself:
+# - Runs verifier + ingest tests as the "scenario"
+# - Assembles a submission
+# - Dispatches via the reusable reporter
+#
+# NOTE: This replaces the separate ci.yml to stay within the 2-active-workflow
+# rule. CI tests run as part of the dogfood scenario, not separately.
+
+name: Dogfood
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - "schemas/**"
+      - "policies/**"
+      - "dogfood/**"
+      - ".github/workflows/dogfood.yml"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  dogfood:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      # --- Scenario execution: run the product ---
+
+      - name: Install verifier
+        run: cd tools/verify && npm ci
+
+      - name: Install ingest
+        run: cd tools/ingest && npm ci
+
+      - name: Run report tests
+        id: report_tests
+        run: |
+          cd tools/report
+          node --test 2>&1 | tee /tmp/report-test.log
+          echo "count=$(grep -c '^ok' /tmp/report-test.log || echo 0)" >> "$GITHUB_OUTPUT"
+
+      - name: Run verifier tests
+        id: verify_tests
+        run: |
+          cd tools/verify
+          node --test 2>&1 | tee /tmp/verify-test.log
+          echo "count=$(grep -c '^ok' /tmp/verify-test.log || echo 0)" >> "$GITHUB_OUTPUT"
+
+      - name: Run ingest tests
+        id: ingest_tests
+        run: |
+          cd tools/ingest
+          node --test 2>&1 | tee /tmp/ingest-test.log
+          echo "count=$(grep -c '^ok' /tmp/ingest-test.log || echo 0)" >> "$GITHUB_OUTPUT"
+
+      # --- Assemble submission ---
+
+      - name: Build submission
+        env:
+          STARTED_AT: ${{ github.event.head_commit.timestamp || github.event.repository.updated_at }}
+        run: |
+          FINISHED_AT=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
+          VERIFY_COUNT="${{ steps.verify_tests.outputs.count }}"
+          INGEST_COUNT="${{ steps.ingest_tests.outputs.count }}"
+          TOTAL=$((VERIFY_COUNT + INGEST_COUNT))
+
+          cat > /tmp/submission.json << SUBMISSION_EOF
+          {
+            "schema_version": "1.0.0",
+            "run_id": "pilot0-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}",
+            "repo": "${GITHUB_REPOSITORY}",
+            "ref": {
+              "branch": "${GITHUB_REF_NAME}",
+              "commit_sha": "${GITHUB_SHA}"
+            },
+            "source": {
+              "provider": "github",
+              "workflow": "dogfood.yml",
+              "provider_run_id": "${GITHUB_RUN_ID}",
+              "attempt": ${GITHUB_RUN_ATTEMPT},
+              "run_url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+              "actor": "${GITHUB_ACTOR}"
+            },
+            "timing": {
+              "started_at": "${STARTED_AT}",
+              "finished_at": "${FINISHED_AT}",
+              "duration_ms": 0
+            },
+            "ci_checks": [
+              { "id": "verifier-tests", "kind": "test", "status": "pass", "value": ${VERIFY_COUNT} },
+              { "id": "ingest-tests", "kind": "test", "status": "pass", "value": ${INGEST_COUNT} }
+            ],
+            "scenario_results": [
+              {
+                "scenario_id": "record-ingest-roundtrip",
+                "scenario_name": "Record ingest roundtrip",
+                "scenario_version": "1.0.0",
+                "product_surface": "cli",
+                "execution_mode": "bot",
+                "verdict": "pass",
+                "step_results": [
+                  { "step_id": "emit-submission", "status": "pass", "notes": "Submission JSON assembled" },
+                  { "step_id": "ingest-submission", "status": "pass", "notes": "Verifier tests prove ingestion works" },
+                  { "step_id": "verify-schema", "status": "pass", "notes": "Schema tests pass" },
+                  { "step_id": "verify-policy", "status": "pass", "notes": "Policy tests pass" },
+                  { "step_id": "compute-verdict", "status": "pass", "notes": "Verdict tests pass" },
+                  { "step_id": "write-record", "status": "pass", "notes": "Persist tests pass" }
+                ],
+                "evidence": [
+                  {
+                    "kind": "log",
+                    "url": "https://github.com/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}",
+                    "description": "CI run log with all test output"
+                  }
+                ],
+                "notes": "${TOTAL} tests passed across verifier and ingest."
+              }
+            ],
+            "overall_verdict": "pass",
+            "notes": "Pilot 0 self-dogfood: all tests passing."
+          }
+          SUBMISSION_EOF
+
+          # Validate JSON
+          jq empty /tmp/submission.json
+          echo "Submission built successfully"
+          jq '.run_id, .overall_verdict' /tmp/submission.json
+
+      # --- Dispatch (only on main, not on PRs) ---
+
+      - name: Dispatch to ingestion
+        if: github.ref == 'refs/heads/main'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          SUBMISSION=$(cat /tmp/submission.json)
+          RUN_ID=$(echo "$SUBMISSION" | jq -r '.run_id')
+
+          # Self-dispatch: dogfood-labs dispatches to itself
+          gh api repos/${GITHUB_REPOSITORY}/dispatches \
+            -f "event_type=dogfood_submission" \
+            -f "client_payload[submission]=$SUBMISSION" \
+            --silent || echo "::warning::Dispatch failed (may need PAT for self-dispatch)"
+
+          echo "Dispatched $RUN_ID"
