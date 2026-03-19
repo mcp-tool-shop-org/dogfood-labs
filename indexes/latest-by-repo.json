@@ -1,1 +1,11 @@
-{}
+{
+  "mcp-tool-shop-org/shipcheck": {
+    "cli": {
+      "run_id": "shipcheck-23320088604-1",
+      "verified": "pass",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-19T22:33:33Z",
+      "path": "records/mcp-tool-shop-org/shipcheck/2026/03/19/run-shipcheck-23320088604-1.json"
+    }
+  }
+}
