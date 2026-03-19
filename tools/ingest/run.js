@@ -141,7 +141,11 @@ if (isMain) {
     submissionJson = Buffer.concat(chunks).toString('utf-8');
   }
 
-  const submission = JSON.parse(submissionJson);
+  let submission = JSON.parse(submissionJson);
+  // Defensive: if payload arrived double-encoded (string within JSON), re-parse
+  if (typeof submission === 'string') {
+    submission = JSON.parse(submission);
+  }
 
   const result = await ingest(submission, { repoRoot });
 
