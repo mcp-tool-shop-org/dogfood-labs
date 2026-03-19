@@ -1,0 +1,14 @@
+{
+  "name": "@dogfood-labs/ingest",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Ingestion pipeline for dogfood-labs. Thin glue: dispatch → verifier → persist → indexes.",
+  "scripts": {
+    "test": "node --test",
+    "ingest": "node run.js"
+  },
+  "dependencies": {
+    "js-yaml": "^4.1.0"
+  }
+}

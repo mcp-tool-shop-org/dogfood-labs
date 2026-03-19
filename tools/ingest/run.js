@@ -1,0 +1,162 @@
+/**
+ * Ingestion orchestrator
+ *
+ * Thin glue: dispatch → load context → verifier → persist → rebuild indexes.
+ *
+ * Does NOT:
+ * - decide verdicts on its own
+ * - enforce policy outside the verifier
+ * - inspect step results beyond passing them through
+ * - mutate source-authored fields except through the verifier result
+ *
+ * Does:
+ * - parse payload
+ * - gather needed inputs
+ * - call verifier
+ * - persist output
+ * - regenerate indexes
+ */
+
+import { resolve, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+import { verify } from '../verify/index.js';
+import { stubProvenance } from '../verify/validators/provenance.js';
+import { loadGlobalPolicy, loadRepoPolicy, loadScenarios } from './load-context.js';
+import { isDuplicate, writeRecord } from './persist.js';
+import { rebuildIndexes } from './rebuild-indexes.js';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
+
+/**
+ * Run the full ingestion pipeline.
+ *
+ * @param {object} submission - Source-authored submission payload
+ * @param {object} options
+ * @param {string} options.repoRoot - Absolute path to dogfood-labs repo root
+ * @param {object} [options.provenance] - Provenance adapter (defaults to stub)
+ * @param {object} [options.scenarioFetcher] - Scenario fetch adapter
+ * @returns {Promise<{ record: object, path: string, written: boolean, duplicate: boolean }>}
+ */
+export async function ingest(submission, options) {
+  const {
+    repoRoot,
+    provenance = stubProvenance,
+    scenarioFetcher = null
+  } = options;
+
+  // 1. Check for duplicate before doing any work
+  //    We need a minimal record shape to compute the path for duplicate check
+  if (submission.run_id && submission.repo && submission.timing?.finished_at) {
+    const probeRecord = {
+      run_id: submission.run_id,
+      repo: submission.repo,
+      timing: submission.timing,
+      verification: { status: 'accepted' }
+    };
+    if (isDuplicate(submission.run_id, probeRecord, repoRoot)) {
+      return {
+        record: null,
+        path: null,
+        written: false,
+        duplicate: true
+      };
+    }
+  }
+
+  // 2. Load context
+  const globalPolicy = loadGlobalPolicy(repoRoot);
+  const repoPolicy = loadRepoPolicy(submission.repo || '', repoRoot);
+  const policyVersion = repoPolicy?.policy_version || globalPolicy.policy_version || '1.0.0';
+
+  // 3. Load scenario definitions (non-fatal if missing — becomes rejection reason)
+  let scenarioErrors = [];
+  if (scenarioFetcher && submission.scenario_results) {
+    const result = await loadScenarios(submission, scenarioFetcher);
+    scenarioErrors = result.errors;
+  }
+
+  // 4. Call verifier — the law engine makes all decisions
+  const record = await verify(submission, {
+    globalPolicy,
+    repoPolicy,
+    provenance,
+    policyVersion
+  });
+
+  // 4b. Append scenario loading errors to rejection reasons if any
+  if (scenarioErrors.length > 0) {
+    record.verification.rejection_reasons.push(
+      ...scenarioErrors.map(e => `scenario-load: ${e}`)
+    );
+    // If scenario loading failed, this is a rejection
+    if (record.verification.status === 'accepted' && scenarioErrors.length > 0) {
+      record.verification.status = 'rejected';
+      record.verification.policy_valid = false;
+      // Downgrade verdict if needed
+      if (record.overall_verdict.verified === 'pass') {
+        record.overall_verdict.verified = 'fail';
+        record.overall_verdict.downgraded = true;
+        if (!record.overall_verdict.downgrade_reasons) {
+          record.overall_verdict.downgrade_reasons = [];
+        }
+        record.overall_verdict.downgrade_reasons.push('scenario definitions could not be loaded');
+      }
+    }
+  }
+
+  // 5. Persist record
+  const { path, written } = writeRecord(record, repoRoot);
+
+  // 6. Rebuild indexes
+  if (written) {
+    rebuildIndexes(repoRoot);
+  }
+
+  return { record, path, written, duplicate: false };
+}
+
+// --- CLI entrypoint ---
+// When run directly, reads submission from stdin or file argument
+
+const isMain = process.argv[1] && resolve(process.argv[1]) === resolve(__dirname, 'run.js');
+
+if (isMain) {
+  const args = process.argv.slice(2);
+  const repoRoot = resolve(__dirname, '../..');
+
+  let submissionJson;
+
+  if (args[0] === '--file' && args[1]) {
+    const { readFileSync } = await import('node:fs');
+    submissionJson = readFileSync(resolve(args[1]), 'utf-8');
+  } else if (args[0] === '--payload' && args[1]) {
+    submissionJson = args[1];
+  } else {
+    // Read from stdin
+    const chunks = [];
+    for await (const chunk of process.stdin) {
+      chunks.push(chunk);
+    }
+    submissionJson = Buffer.concat(chunks).toString('utf-8');
+  }
+
+  const submission = JSON.parse(submissionJson);
+
+  const result = await ingest(submission, { repoRoot });
+
+  if (result.duplicate) {
+    console.log(JSON.stringify({ status: 'duplicate', run_id: submission.run_id }));
+    process.exit(0);
+  }
+
+  console.log(JSON.stringify({
+    status: result.record.verification.status,
+    run_id: result.record.run_id,
+    verdict: result.record.overall_verdict.verified,
+    path: result.path,
+    written: result.written
+  }));
+
+  process.exit(result.record.verification.status === 'accepted' ? 0 : 1);
+}

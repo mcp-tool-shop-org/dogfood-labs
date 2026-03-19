@@ -1,0 +1,30 @@
+name: CI
+
+on:
+  push:
+    paths:
+      - "tools/**"
+      - "schemas/**"
+      - "policies/**"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install and test verifier
+        run: cd tools/verify && npm ci && node --test
+
+      - name: Install and test ingest
+        run: cd tools/ingest && npm ci && node --test
