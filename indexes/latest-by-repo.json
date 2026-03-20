@@ -26,6 +26,15 @@
       "path": "records/mcp-tool-shop-org/glyphstudio/2026/03/20/run-glyphstudio-23325766223-1.json"
     }
   },
+  "mcp-tool-shop-org/repo-crawler-mcp": {
+    "mcp-server": {
+      "run_id": "repo-crawler-mcp-23326627220-1",
+      "verified": "pass",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T02:33:58Z",
+      "path": "records/mcp-tool-shop-org/repo-crawler-mcp/2026/03/20/run-repo-crawler-mcp-23326627220-1.json"
+    }
+  },
   "mcp-tool-shop-org/shipcheck": {
     "cli": {
       "run_id": "shipcheck-23326132347-1",
