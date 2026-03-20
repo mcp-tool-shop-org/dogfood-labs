@@ -2,7 +2,7 @@ repo: mcp-tool-shop-org/repo-crawler-mcp
 policy_version: "1.0.0"
 
 surfaces:
-  mcp:
+  mcp-server:
     required_scenarios:
       - crawl-real-repo
     freshness:
