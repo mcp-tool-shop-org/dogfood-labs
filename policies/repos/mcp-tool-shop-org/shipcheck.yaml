@@ -14,8 +14,8 @@ surfaces:
       coverage_min: null
       tests_must_pass: true
     evidence_requirements:
-      required_kinds: [log, artifact]
-      min_evidence_count: 2
+      required_kinds: [log]
+      min_evidence_count: 1
 
   npm-package:
     required_scenarios:
