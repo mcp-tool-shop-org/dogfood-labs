@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "repo": "mcp-tool-shop-org/ai-loadout",
+    "surface": "cli",
+    "run_id": "ai-loadout-23326498651-1",
+    "verified": "fail",
+    "finished_at": "2026-03-20T02:27:52Z",
+    "path": "records/mcp-tool-shop-org/ai-loadout/2026/03/20/run-ai-loadout-23326498651-1.json"
+  }
+]
