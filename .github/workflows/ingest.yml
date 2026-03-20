@@ -81,7 +81,14 @@ jobs:
           STATUS="${{ steps.result.outputs.status }}"
           git diff --cached --quiet && echo "No changes to commit" && exit 0
           git commit -m "ingest: ${STATUS} dogfood record ${RUN_ID}"
-          git push
+
+          # Retry push with pull-rebase to handle concurrent ingestions
+          for i in 1 2 3; do
+            git push && exit 0
+            echo "Push attempt $i failed, pulling and retrying..."
+            git pull --rebase
+          done
+          echo "All push attempts failed" && exit 1
 
       - name: Summary
         run: |
