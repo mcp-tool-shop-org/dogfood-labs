@@ -17,6 +17,15 @@
       "path": "records/mcp-tool-shop-org/claude-guardian/2026/03/20/run-claude-guardian-23326623878-1.json"
     }
   },
+  "mcp-tool-shop-org/code-batch": {
+    "cli": {
+      "run_id": "code-batch-23328745842-1",
+      "verified": "pass",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T04:12:52Z",
+      "path": "records/mcp-tool-shop-org/code-batch/2026/03/20/run-code-batch-23328745842-1.json"
+    }
+  },
   "mcp-tool-shop-org/glyphstudio": {
     "desktop": {
       "run_id": "glyphstudio-23325766223-1",
