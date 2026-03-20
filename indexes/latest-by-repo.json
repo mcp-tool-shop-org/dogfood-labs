@@ -79,5 +79,14 @@
       "finished_at": "2026-03-20T04:10:14Z",
       "path": "records/mcp-tool-shop-org/voice-soundboard/2026/03/20/run-voice-soundboard-23328687304-1.json"
     }
+  },
+  "mcp-tool-shop-org/zip-meta-map": {
+    "cli": {
+      "run_id": "zip-meta-map-23328698294-1",
+      "verified": "fail",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T04:10:38Z",
+      "path": "records/mcp-tool-shop-org/zip-meta-map/2026/03/20/run-zip-meta-map-23328698294-1.json"
+    }
   }
 }
