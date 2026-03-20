@@ -1,6 +1,6 @@
 # Dogfood Rollout Doctrine
 
-Reusable rules extracted from Phase 2 rollout across 7 repos and 5 archetypes.
+Reusable rules extracted from rollout across 13 repos and 8 surface types.
 These are not guidelines — they are rollout law, proven by real failures.
 
 ## Surface truth
@@ -69,3 +69,24 @@ If the verdict logic omits a step (like `verify-output`), a failed step can prod
 If a scenario doesn't naturally produce an artifact, don't require one just to satisfy policy. Forced evidence is worse than no evidence — it teaches repos to manufacture compliance rather than demonstrate reality.
 
 *Proven by:* shipcheck's `artifact` evidence requirement was satisfied by adding a forced evidence step, not a natural output. Relaxed to `log` only after calibration.
+
+## Entrypoint truth
+
+**Scenarios must use the real CLI interface, not assumed flags.**
+Every repo has its own argument shape. Positional args, subcommands, flag names — none should be guessed. Read `--help` or the CLI source before writing the scenario. A wrong flag produces exit code 2 (argparse error), which the verifier correctly records as a fail.
+
+*Proven by:* code-batch used `--store` (not a real flag — `init` takes a positional), zip-meta-map used bare `.` (not a real invocation — requires `build` subcommand), voice-soundboard imported `Compiler` (not exported — the function is `compile`).
+
+## Read-after-write timing
+
+**Gate F reads via raw.githubusercontent.com, which has a CDN cache (3–5 minutes).**
+After a fresh ingestion, the dogfood-labs index is updated immediately in git. However, Gate F fetches the index via the GitHub raw content CDN, which may serve stale data for up to 5 minutes. This is an operational timing seam, not a product failure.
+
+Operators should expect:
+- Fresh ingestion → git shows pass immediately
+- Gate F → may show the previous state for 3–5 minutes
+- This resolves without intervention; no retry or fix needed
+
+Do not "fix" this by adding cache-busting headers or switching to the GitHub API. The CDN behavior is correct and expected.
+
+*Proven by:* voice-soundboard and zip-meta-map showed "fail" in Gate F for ~3 minutes after their corrected runs were ingested and verified as pass in git.

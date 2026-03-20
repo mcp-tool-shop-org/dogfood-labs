@@ -73,3 +73,13 @@ exempt → warn-only → required
 ```
 
 New repos start at `required` unless there's a documented reason not to. Downgrades require a reason in the policy file.
+
+## Operator note: read-after-write timing
+
+Gate F fetches the dogfood index via `raw.githubusercontent.com`, which has a CDN cache of 3–5 minutes. After a fresh dogfood run is ingested:
+
+- The git index is updated immediately
+- Gate F may read stale data for up to 5 minutes
+- This resolves without intervention
+
+This is expected CDN behavior, not a product defect. See `docs/rollout-doctrine.md` for details.
