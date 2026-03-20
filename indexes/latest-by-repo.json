@@ -61,5 +61,14 @@
       "finished_at": "2026-03-20T02:54:12Z",
       "path": "records/mcp-tool-shop-org/vocal-synth-engine/2026/03/20/run-vocal-synth-engine-23327053189-1.json"
     }
+  },
+  "mcp-tool-shop-org/voice-soundboard": {
+    "library": {
+      "run_id": "voice-soundboard-23328687304-1",
+      "verified": "fail",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T04:10:14Z",
+      "path": "records/mcp-tool-shop-org/voice-soundboard/2026/03/20/run-voice-soundboard-23328687304-1.json"
+    }
   }
 }
