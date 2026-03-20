@@ -43,5 +43,14 @@
       "finished_at": "2026-03-20T02:11:04Z",
       "path": "records/mcp-tool-shop-org/shipcheck/2026/03/20/run-shipcheck-23326132347-1.json"
     }
+  },
+  "mcp-tool-shop-org/vocal-synth-engine": {
+    "api": {
+      "run_id": "vocal-synth-engine-23326822355-1",
+      "verified": "fail",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T02:43:41Z",
+      "path": "records/mcp-tool-shop-org/vocal-synth-engine/2026/03/20/run-vocal-synth-engine-23326822355-1.json"
+    }
   }
 }

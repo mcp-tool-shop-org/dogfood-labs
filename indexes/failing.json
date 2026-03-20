@@ -1,1 +1,10 @@
-[]
+[
+  {
+    "repo": "mcp-tool-shop-org/vocal-synth-engine",
+    "surface": "api",
+    "run_id": "vocal-synth-engine-23326822355-1",
+    "verified": "fail",
+    "finished_at": "2026-03-20T02:43:41Z",
+    "path": "records/mcp-tool-shop-org/vocal-synth-engine/2026/03/20/run-vocal-synth-engine-23326822355-1.json"
+  }
+]
