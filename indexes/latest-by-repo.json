@@ -44,6 +44,15 @@
       "path": "records/mcp-tool-shop-org/glyphstudio/2026/03/20/run-glyphstudio-23325766223-1.json"
     }
   },
+  "mcp-tool-shop-org/polyglot-vscode": {
+    "plugin": {
+      "run_id": "polyglot-vscode-23329272460-1",
+      "verified": "pass",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T04:37:25Z",
+      "path": "records/mcp-tool-shop-org/polyglot-vscode/2026/03/20/run-polyglot-vscode-23329272460-1.json"
+    }
+  },
   "mcp-tool-shop-org/repo-crawler-mcp": {
     "mcp-server": {
       "run_id": "repo-crawler-mcp-23326627220-1",
