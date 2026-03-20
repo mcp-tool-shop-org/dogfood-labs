@@ -8,6 +8,15 @@
       "path": "records/mcp-tool-shop-org/ai-loadout/2026/03/20/run-ai-loadout-23326498651-1.json"
     }
   },
+  "mcp-tool-shop-org/claude-guardian": {
+    "mcp-server": {
+      "run_id": "claude-guardian-23326623878-1",
+      "verified": "pass",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T02:33:43Z",
+      "path": "records/mcp-tool-shop-org/claude-guardian/2026/03/20/run-claude-guardian-23326623878-1.json"
+    }
+  },
   "mcp-tool-shop-org/glyphstudio": {
     "desktop": {
       "run_id": "glyphstudio-23325766223-1",
