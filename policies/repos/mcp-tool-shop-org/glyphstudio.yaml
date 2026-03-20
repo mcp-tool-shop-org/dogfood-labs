@@ -1,6 +1,9 @@
 repo: mcp-tool-shop-org/glyphstudio
 policy_version: "1.0.0"
 
+enforcement:
+  mode: required
+
 surfaces:
   desktop:
     required_scenarios:

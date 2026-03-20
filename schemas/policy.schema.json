@@ -19,6 +19,28 @@
       "pattern": "^\\d+\\.\\d+\\.\\d+$"
     },
 
+    "enforcement": {
+      "type": "object",
+      "description": "How Gate F treats this repo. Defaults to required if omitted.",
+      "additionalProperties": false,
+      "properties": {
+        "mode": {
+          "type": "string",
+          "enum": ["required", "warn-only", "exempt"],
+          "description": "required: Gate F fails on missing/stale/non-pass. warn-only: emits warning, exits 0. exempt: reports exempt status, exits 0."
+        },
+        "reason": {
+          "type": ["string", "null"],
+          "description": "Why this repo is warn-only or exempt. Required if mode is not 'required'."
+        },
+        "review_after": {
+          "type": ["string", "null"],
+          "pattern": "^\\d{4}-\\d{2}-\\d{2}$",
+          "description": "Date (YYYY-MM-DD) to review enforcement mode. Required if mode is 'exempt'."
+        }
+      }
+    },
+
     "surfaces": {
       "type": "object",
       "description": "Per-surface policy. Keys are product_surface values.",

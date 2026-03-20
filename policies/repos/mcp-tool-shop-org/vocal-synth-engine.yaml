@@ -1,6 +1,9 @@
 repo: mcp-tool-shop-org/vocal-synth-engine
 policy_version: "1.0.0"
 
+enforcement:
+  mode: required
+
 surfaces:
   api:
     required_scenarios:

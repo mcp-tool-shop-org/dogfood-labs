@@ -1,6 +1,9 @@
 repo: mcp-tool-shop-org/repo-crawler-mcp
 policy_version: "1.0.0"
 
+enforcement:
+  mode: required
+
 surfaces:
   mcp-server:
     required_scenarios:

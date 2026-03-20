@@ -1,6 +1,9 @@
 repo: mcp-tool-shop-org/dogfood-labs
 policy_version: "1.0.0"
 
+enforcement:
+  mode: required
+
 surfaces:
   cli:
     required_scenarios:
