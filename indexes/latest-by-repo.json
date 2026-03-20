@@ -1,11 +1,11 @@
 {
   "mcp-tool-shop-org/ai-loadout": {
     "cli": {
-      "run_id": "ai-loadout-23326498651-1",
-      "verified": "fail",
+      "run_id": "ai-loadout-23326630420-1",
+      "verified": "pass",
       "verification_status": "accepted",
-      "finished_at": "2026-03-20T02:27:52Z",
-      "path": "records/mcp-tool-shop-org/ai-loadout/2026/03/20/run-ai-loadout-23326498651-1.json"
+      "finished_at": "2026-03-20T02:33:59Z",
+      "path": "records/mcp-tool-shop-org/ai-loadout/2026/03/20/run-ai-loadout-23326630420-1.json"
     }
   },
   "mcp-tool-shop-org/claude-guardian": {
