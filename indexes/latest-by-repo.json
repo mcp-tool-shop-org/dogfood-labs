@@ -44,6 +44,15 @@
       "path": "records/mcp-tool-shop-org/shipcheck/2026/03/20/run-shipcheck-23327511129-1.json"
     }
   },
+  "mcp-tool-shop-org/site-theme": {
+    "npm-package": {
+      "run_id": "site-theme-23328691331-1",
+      "verified": "pass",
+      "verification_status": "accepted",
+      "finished_at": "2026-03-20T04:10:21Z",
+      "path": "records/mcp-tool-shop-org/site-theme/2026/03/20/run-site-theme-23328691331-1.json"
+    }
+  },
   "mcp-tool-shop-org/tool-scan": {
     "cli": {
       "run_id": "tool-scan-23328684276-1",
