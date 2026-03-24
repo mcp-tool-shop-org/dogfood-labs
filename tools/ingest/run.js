@@ -21,7 +21,7 @@ import { resolve, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
 import { verify } from '../verify/index.js';
-import { stubProvenance } from '../verify/validators/provenance.js';
+import { stubProvenance, githubProvenance } from '../verify/validators/provenance.js';
 import { loadGlobalPolicy, loadRepoPolicy, loadScenarios } from './load-context.js';
 import { isDuplicate, writeRecord } from './persist.js';
 import { rebuildIndexes } from './rebuild-indexes.js';
@@ -34,16 +34,24 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
  * @param {object} submission - Source-authored submission payload
  * @param {object} options
  * @param {string} options.repoRoot - Absolute path to dogfood-labs repo root
- * @param {object} [options.provenance] - Provenance adapter (defaults to stub)
+ * @param {object} options.provenance - Provenance adapter (REQUIRED — no default, no implicit stub)
  * @param {object} [options.scenarioFetcher] - Scenario fetch adapter
  * @returns {Promise<{ record: object, path: string, written: boolean, duplicate: boolean }>}
  */
 export async function ingest(submission, options) {
   const {
     repoRoot,
-    provenance = stubProvenance,
+    provenance,
     scenarioFetcher = null
   } = options;
+
+  // Provenance adapter is REQUIRED. No implicit stub. Fail closed.
+  if (!provenance || typeof provenance.confirm !== 'function') {
+    throw new Error(
+      'Provenance adapter is required. Use githubProvenance(token) for production ' +
+      'or stubProvenance for tests. No implicit default — fail closed.'
+    );
+  }
 
   // 1. Check for duplicate before doing any work
   //    We need a minimal record shape to compute the path for duplicate check
@@ -125,14 +133,25 @@ if (isMain) {
   const args = process.argv.slice(2);
   const repoRoot = resolve(__dirname, '../..');
 
+  // Parse CLI flags
   let submissionJson;
+  let provenanceMode = null;
+  const positionalArgs = [];
 
-  if (args[0] === '--file' && args[1]) {
-    const { readFileSync } = await import('node:fs');
-    submissionJson = readFileSync(resolve(args[1]), 'utf-8');
-  } else if (args[0] === '--payload' && args[1]) {
-    submissionJson = args[1];
-  } else {
+  for (let i = 0; i < args.length; i++) {
+    if (args[i] === '--provenance' && args[i + 1]) {
+      provenanceMode = args[++i];
+    } else if (args[i] === '--file' && args[i + 1]) {
+      const { readFileSync } = await import('node:fs');
+      submissionJson = readFileSync(resolve(args[++i]), 'utf-8');
+    } else if (args[i] === '--payload' && args[i + 1]) {
+      submissionJson = args[++i];
+    } else {
+      positionalArgs.push(args[i]);
+    }
+  }
+
+  if (!submissionJson) {
     // Read from stdin
     const chunks = [];
     for await (const chunk of process.stdin) {
@@ -147,7 +166,37 @@ if (isMain) {
     submission = JSON.parse(submission);
   }
 
-  const result = await ingest(submission, { repoRoot });
+  // Resolve provenance adapter — explicit, never implicit
+  let provenance;
+  if (provenanceMode === 'stub') {
+    // Structural anti-misuse: stub only allowed outside CI
+    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+      console.error('ERROR: --provenance=stub is not allowed in CI/production. Use --provenance=github.');
+      process.exit(2);
+    }
+    console.error('WARNING: Using stub provenance (test/dev only). Records will NOT have real provenance verification.');
+    provenance = stubProvenance;
+  } else if (provenanceMode === 'github') {
+    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    if (!token) {
+      console.error('ERROR: --provenance=github requires GITHUB_TOKEN or GH_TOKEN environment variable.');
+      process.exit(2);
+    }
+    provenance = githubProvenance(token);
+  } else if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+    // In CI without explicit flag: default to github provenance, fail if no token
+    const token = process.env.GITHUB_TOKEN || process.env.GH_TOKEN;
+    if (!token) {
+      console.error('ERROR: Running in CI without --provenance flag and no GITHUB_TOKEN. Cannot verify provenance.');
+      process.exit(2);
+    }
+    provenance = githubProvenance(token);
+  } else {
+    console.error('ERROR: --provenance flag is required. Use --provenance=github (production) or --provenance=stub (test/dev only).');
+    process.exit(2);
+  }
+
+  const result = await ingest(submission, { repoRoot, provenance });
 
   if (result.duplicate) {
     console.log(JSON.stringify({ status: 'duplicate', run_id: submission.run_id }));

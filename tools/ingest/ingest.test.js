@@ -269,6 +269,56 @@ describe('ingestion pipeline', () => {
   });
 });
 
+// ── Provenance Guards (lockdown regression tests) ─────────────
+
+describe('provenance guards', () => {
+  it('rejects ingestion when no provenance adapter is provided', async () => {
+    setupTestRoot();
+    await assert.rejects(
+      () => ingest(pilot0, { repoRoot: TEST_ROOT }),
+      { message: /Provenance adapter is required/ }
+    );
+  });
+
+  it('rejects ingestion when provenance is null', async () => {
+    setupTestRoot();
+    await assert.rejects(
+      () => ingest(pilot0, { repoRoot: TEST_ROOT, provenance: null }),
+      { message: /Provenance adapter is required/ }
+    );
+  });
+
+  it('rejects ingestion when provenance has no confirm method', async () => {
+    setupTestRoot();
+    await assert.rejects(
+      () => ingest(pilot0, { repoRoot: TEST_ROOT, provenance: {} }),
+      { message: /Provenance adapter is required/ }
+    );
+  });
+
+  it('accepts ingestion when stubProvenance is explicitly passed', async () => {
+    setupTestRoot();
+    const result = await ingest(pilot0, {
+      repoRoot: TEST_ROOT,
+      provenance: stubProvenance
+    });
+    assert.equal(result.duplicate, false);
+    assert.equal(result.written, true);
+  });
+
+  it('rejects ingestion with rejectingProvenance', async () => {
+    setupTestRoot();
+    const result = await ingest(pilot0, {
+      repoRoot: TEST_ROOT,
+      provenance: rejectingProvenance
+    });
+    assert.equal(result.record.verification.status, 'rejected');
+    assert.ok(result.record.verification.rejection_reasons.some(
+      r => r.includes('provenance')
+    ));
+  });
+});
+
 // ── Index Generator ────────────────────────────────────────────
 
 describe('index generator', () => {

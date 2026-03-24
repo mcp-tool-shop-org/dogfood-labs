@@ -42,10 +42,12 @@ jobs:
         id: ingest_dispatch
         env:
           SUBMISSION_PAYLOAD: ${{ toJson(github.event.client_payload.submission) }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Note: toJson is needed to safely pass the object through env var.
           # The run.js entrypoint handles double-encoded strings defensively.
+          # --provenance=github uses GITHUB_TOKEN to verify source run exists via API.
         run: |
-          echo "$SUBMISSION_PAYLOAD" | node tools/ingest/run.js | tee /tmp/ingest-result.json
+          echo "$SUBMISSION_PAYLOAD" | node tools/ingest/run.js --provenance=github | tee /tmp/ingest-result.json
           STATUS=$(jq -r '.status' /tmp/ingest-result.json)
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "result=$(cat /tmp/ingest-result.json)" >> "$GITHUB_OUTPUT"
@@ -53,8 +55,10 @@ jobs:
       - name: Run ingestion (workflow_dispatch)
         if: github.event_name == 'workflow_dispatch'
         id: ingest_manual
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          node tools/ingest/run.js --file "${{ inputs.submission_file }}" | tee /tmp/ingest-result.json
+          node tools/ingest/run.js --provenance=github --file "${{ inputs.submission_file }}" | tee /tmp/ingest-result.json
           STATUS=$(jq -r '.status' /tmp/ingest-result.json)
           echo "status=$STATUS" >> "$GITHUB_OUTPUT"
           echo "result=$(cat /tmp/ingest-result.json)" >> "$GITHUB_OUTPUT"

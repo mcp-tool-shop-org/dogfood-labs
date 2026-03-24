@@ -64,7 +64,13 @@
     "provenance_confirmed": true,
     "schema_valid": true,
     "policy_valid": true,
-    "rejection_reasons": []
+    "rejection_reasons": [],
+    "provenance_remediation": {
+      "status": "stub_verified",
+      "note": "This record was ingested with stub provenance (always confirms). GitHub API provenance was NOT checked at ingestion time. Record may still be valid but provenance was not independently verified.",
+      "remediated_at": "2026-03-24T21:49:40.087Z",
+      "original_provenance_confirmed": true
+    }
   },
   "notes": "Expansion: polyglot-vscode plugin surface dogfood."
 }
