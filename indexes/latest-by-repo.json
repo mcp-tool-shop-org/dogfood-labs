@@ -5,16 +5,16 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:36:38Z",
-      "path": "records\\mcp-tool-shop-org\\a11y-demo-site\\2026\\03\\20\\run-a11y-demo-site-23329256169-1.json"
+      "path": "records/mcp-tool-shop-org/a11y-demo-site/2026/03/20/run-a11y-demo-site-23329256169-1.json"
     }
   },
   "mcp-tool-shop-org/ai-loadout": {
     "cli": {
-      "run_id": "ai-loadout-23326630420-1",
+      "run_id": "ai-loadout-23566269375-1",
       "verified": "pass",
       "verification_status": "accepted",
-      "finished_at": "2026-03-20T02:33:59Z",
-      "path": "records\\mcp-tool-shop-org\\ai-loadout\\2026\\03\\20\\run-ai-loadout-23326630420-1.json"
+      "finished_at": "2026-03-25T21:59:20Z",
+      "path": "records/mcp-tool-shop-org/ai-loadout/2026/03/25/run-ai-loadout-23566269375-1.json"
     }
   },
   "mcp-tool-shop-org/claude-guardian": {
@@ -23,7 +23,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T02:33:43Z",
-      "path": "records\\mcp-tool-shop-org\\claude-guardian\\2026\\03\\20\\run-claude-guardian-23326623878-1.json"
+      "path": "records/mcp-tool-shop-org/claude-guardian/2026/03/20/run-claude-guardian-23326623878-1.json"
     }
   },
   "mcp-tool-shop-org/code-batch": {
@@ -32,7 +32,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:12:52Z",
-      "path": "records\\mcp-tool-shop-org\\code-batch\\2026\\03\\20\\run-code-batch-23328745842-1.json"
+      "path": "records/mcp-tool-shop-org/code-batch/2026/03/20/run-code-batch-23328745842-1.json"
     }
   },
   "mcp-tool-shop-org/glyphstudio": {
@@ -41,7 +41,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T01:54:44Z",
-      "path": "records\\mcp-tool-shop-org\\glyphstudio\\2026\\03\\20\\run-glyphstudio-23325766223-1.json"
+      "path": "records/mcp-tool-shop-org/glyphstudio/2026/03/20/run-glyphstudio-23325766223-1.json"
     }
   },
   "mcp-tool-shop-org/polyglot-vscode": {
@@ -50,7 +50,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:42:39Z",
-      "path": "records\\mcp-tool-shop-org\\polyglot-vscode\\2026\\03\\20\\run-polyglot-vscode-23329388494-1.json"
+      "path": "records/mcp-tool-shop-org/polyglot-vscode/2026/03/20/run-polyglot-vscode-23329388494-1.json"
     }
   },
   "mcp-tool-shop-org/repo-crawler-mcp": {
@@ -59,7 +59,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-24T20:23:17Z",
-      "path": "records\\mcp-tool-shop-org\\repo-crawler-mcp\\2026\\03\\24\\run-repo-crawler-mcp-23510482475-1.json"
+      "path": "records/mcp-tool-shop-org/repo-crawler-mcp/2026/03/24/run-repo-crawler-mcp-23510482475-1.json"
     }
   },
   "mcp-tool-shop-org/shipcheck": {
@@ -68,7 +68,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T03:14:25Z",
-      "path": "records\\mcp-tool-shop-org\\shipcheck\\2026\\03\\20\\run-shipcheck-23327511129-1.json"
+      "path": "records/mcp-tool-shop-org/shipcheck/2026/03/20/run-shipcheck-23327511129-1.json"
     }
   },
   "mcp-tool-shop-org/site-theme": {
@@ -77,7 +77,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:10:21Z",
-      "path": "records\\mcp-tool-shop-org\\site-theme\\2026\\03\\20\\run-site-theme-23328691331-1.json"
+      "path": "records/mcp-tool-shop-org/site-theme/2026/03/20/run-site-theme-23328691331-1.json"
     }
   },
   "mcp-tool-shop-org/tool-scan": {
@@ -86,7 +86,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:10:03Z",
-      "path": "records\\mcp-tool-shop-org\\tool-scan\\2026\\03\\20\\run-tool-scan-23328684276-1.json"
+      "path": "records/mcp-tool-shop-org/tool-scan/2026/03/20/run-tool-scan-23328684276-1.json"
     }
   },
   "mcp-tool-shop-org/vocal-synth-engine": {
@@ -95,7 +95,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T02:54:12Z",
-      "path": "records\\mcp-tool-shop-org\\vocal-synth-engine\\2026\\03\\20\\run-vocal-synth-engine-23327053189-1.json"
+      "path": "records/mcp-tool-shop-org/vocal-synth-engine/2026/03/20/run-vocal-synth-engine-23327053189-1.json"
     }
   },
   "mcp-tool-shop-org/voice-soundboard": {
@@ -104,7 +104,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:16:09Z",
-      "path": "records\\mcp-tool-shop-org\\voice-soundboard\\2026\\03\\20\\run-voice-soundboard-23328817863-1.json"
+      "path": "records/mcp-tool-shop-org/voice-soundboard/2026/03/20/run-voice-soundboard-23328817863-1.json"
     }
   },
   "mcp-tool-shop-org/zip-meta-map": {
@@ -113,7 +113,7 @@
       "verified": "pass",
       "verification_status": "accepted",
       "finished_at": "2026-03-20T04:16:25Z",
-      "path": "records\\mcp-tool-shop-org\\zip-meta-map\\2026\\03\\20\\run-zip-meta-map-23328825542-1.json"
+      "path": "records/mcp-tool-shop-org/zip-meta-map/2026/03/20/run-zip-meta-map-23328825542-1.json"
     }
   }
 }
