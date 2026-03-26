@@ -82,11 +82,11 @@
   },
   "mcp-tool-shop-org/tool-scan": {
     "cli": {
-      "run_id": "tool-scan-23328684276-1",
+      "run_id": "tool-scan-23571932376-1",
       "verified": "pass",
       "verification_status": "accepted",
-      "finished_at": "2026-03-20T04:10:03Z",
-      "path": "records/mcp-tool-shop-org/tool-scan/2026/03/20/run-tool-scan-23328684276-1.json"
+      "finished_at": "2026-03-26T00:52:34Z",
+      "path": "records/mcp-tool-shop-org/tool-scan/2026/03/26/run-tool-scan-23571932376-1.json"
     }
   },
   "mcp-tool-shop-org/vocal-synth-engine": {
