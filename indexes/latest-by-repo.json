@@ -55,11 +55,11 @@
   },
   "mcp-tool-shop-org/repo-crawler-mcp": {
     "mcp-server": {
-      "run_id": "repo-crawler-mcp-23510482475-1",
+      "run_id": "repo-crawler-mcp-23571073097-1",
       "verified": "pass",
       "verification_status": "accepted",
-      "finished_at": "2026-03-24T20:23:17Z",
-      "path": "records/mcp-tool-shop-org/repo-crawler-mcp/2026/03/24/run-repo-crawler-mcp-23510482475-1.json"
+      "finished_at": "2026-03-26T00:22:41Z",
+      "path": "records/mcp-tool-shop-org/repo-crawler-mcp/2026/03/26/run-repo-crawler-mcp-23571073097-1.json"
     }
   },
   "mcp-tool-shop-org/shipcheck": {
