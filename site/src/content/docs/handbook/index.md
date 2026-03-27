@@ -29,7 +29,8 @@ dogfood-labs is the centralized dogfood evidence system for mcp-tool-shop-org. I
 
 ## Getting Started
 
-- [Architecture](./architecture/) — how the system works
-- [Contracts](./contracts/) — the three defining contracts
-- [Operating Guide](./operating-guide/) — day-to-day operations
-- [Integration](./integration/) — how other systems consume dogfood status
+- [Beginner's Guide](./beginners/) -- new to dogfood-labs? start here
+- [Architecture](./architecture/) -- how the system works
+- [Contracts](./contracts/) -- the three defining contracts
+- [Operating Guide](./operating-guide/) -- day-to-day operations
+- [Integration](./integration/) -- how other systems consume dogfood status

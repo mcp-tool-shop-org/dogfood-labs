@@ -28,12 +28,28 @@ sidebar:
 
 ## New Repo Onboarding
 
-1. Create a policy YAML in `policies/repos/mcp-tool-shop-org/<repo>.yaml`
-2. Default enforcement: `required`
-3. Create a dogfood workflow in the source repo (`.github/workflows/dogfood.yml`)
-4. Identify the correct surface type from the 8 defined surfaces
-5. Write a scenario that exercises the real product interface
-6. Run the workflow, verify ingestion, confirm Gate F passes
+1. Create a policy YAML in `policies/repos/mcp-tool-shop-org/<repo>.yaml` with `enforcement.mode: required`
+2. Identify the correct surface type from the 8 defined surfaces: cli, desktop, web, api, mcp-server, npm-package, plugin, library
+3. Define required scenarios and freshness thresholds in the policy under `surfaces.<surface>`
+4. In the source repo, create `dogfood/scenarios/<scenario-id>.yaml` following the scenario contract
+5. Create a dogfood workflow in the source repo (`.github/workflows/dogfood.yml`) that builds a submission and dispatches to dogfood-labs
+6. The source workflow should use the submission builder (`tools/report/build-submission.js`) to produce a canonical submission
+7. Run the workflow, verify ingestion produces an accepted record, confirm the repo appears in `indexes/latest-by-repo.json`
+8. Run `npx @mcptoolshop/shipcheck audit` on the source repo to confirm Gate F passes
+
+## Running Ingestion Locally
+
+The ingestion CLI (`tools/ingest/run.js`) requires an explicit `--provenance` flag:
+
+```bash
+# Production (in CI) -- verifies source runs via GitHub API
+node tools/ingest/run.js --file submission.json --provenance=github
+
+# Local development / testing -- uses a stub that always confirms
+node tools/ingest/run.js --file submission.json --provenance=stub
+```
+
+The `--provenance=stub` flag is blocked in CI environments (`CI=true` or `GITHUB_ACTIONS=true`) as a safety measure. In CI without an explicit flag, the ingestion pipeline defaults to GitHub provenance and requires `GITHUB_TOKEN`.
 
 ## CDN Cache Timing
 

@@ -48,15 +48,41 @@ Records are stored at `records/<org>/<repo>/YYYY/MM/DD/<run-id>.json`. This prov
 |-----------|----------|---------|
 | Verifier | `tools/verify/` | Schema, provenance, policy, verdict validation |
 | Ingestion | `tools/ingest/` | Pipeline orchestration, atomic persistence, index rebuild |
-| Report builder | `tools/report/` | Submission assembly for source repos |
+| Submission builder | `tools/report/` | Canonical submission assembly for source repos |
 | Portfolio | `tools/portfolio/` | Org-level summary generation |
+
+### Verifier Pipeline (7 steps)
+
+The verifier (`tools/verify/index.js`) processes each submission through seven stages in order:
+
+1. **Schema validation** -- validates the submission against `dogfood-record-submission.schema.json` using AJV.
+2. **Verifier-owned field guard** -- rejects submissions that include fields only the verifier may set (`policy_version`, `verification`, or `overall_verdict` as an object).
+3. **Provenance check** -- confirms the source workflow run actually exists via the GitHub Actions API (or a stub adapter in tests).
+4. **Step results validation** -- checks that each scenario's required steps have matching results and that verdicts are internally consistent.
+5. **Policy evaluation** -- evaluates enforcement tier, required scenarios, freshness, and execution-mode constraints from the repo or global policy.
+6. **Verdict computation** -- computes the final verdict. The source proposes a verdict string; the verifier may confirm or downgrade, never upgrade. Verdict severity from highest to lowest: fail, blocked, partial, pass.
+7. **Record assembly** -- builds the persisted record with verifier-owned fields (`verification.status`, `verification.verified_at`, `overall_verdict.verified`, `overall_verdict.downgraded`).
+
+### Generated Indexes
+
+The index generator (`tools/ingest/rebuild-indexes.js`) produces three files after every ingestion:
+
+| Index | Content |
+|-------|---------|
+| `indexes/latest-by-repo.json` | Latest accepted record per repo and surface -- the primary read model for consumers |
+| `indexes/failing.json` | Records where the verified verdict is not `pass` |
+| `indexes/stale.json` | Repo/surface pairs with no accepted record within the staleness threshold (default 30 days) |
+
+### Atomic Persistence
+
+Records are written atomically: the persist layer writes to a temporary file, then renames it to the final path. Duplicate detection by `run_id` prevents double-writes. Accepted records go to `records/<org>/<repo>/YYYY/MM/DD/`, rejected records to `records/_rejected/<org>/<repo>/YYYY/MM/DD/`.
 
 ## Enforcement Tiers
 
 | Mode | Behavior | Default |
 |------|----------|---------|
-| `required` | Blocks on violation | Yes — all repos start here |
+| `required` | Blocks on violation | Yes -- all repos start here |
 | `warn-only` | Warns but doesn't block | Must have documented reason + review date |
 | `exempt` | Skips evaluation entirely | Must have documented reason + review date |
 
-Missing policy defaults to `required` — the safe default.
+Missing policy defaults to `required` -- the safe default.
