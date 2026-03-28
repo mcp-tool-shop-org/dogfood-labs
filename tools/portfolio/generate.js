@@ -78,7 +78,9 @@ function loadPolicies(policiesDir) {
 // --- Freshness ---
 
 export function computeFreshnessDays(finishedAt) {
-  return Math.floor((Date.now() - new Date(finishedAt).getTime()) / 86400000);
+  const ts = new Date(finishedAt).getTime();
+  if (isNaN(ts)) return Infinity;
+  return Math.floor((Date.now() - ts) / 86400000);
 }
 
 // --- Main generation ---
@@ -131,7 +133,7 @@ export function generatePortfolio(index, policies) {
   return {
     generatedAt: new Date().toISOString(),
     coverage: {
-      total_repos: repos.length,
+      total_repos: new Set(repos.map(r => r.repo)).size,
       surfaces_covered: surfacesSeen.size,
       surfaces_total: ALL_SURFACES.length,
     },

@@ -280,6 +280,17 @@
           "type": "array",
           "items": { "type": "string" },
           "description": "Machine-readable reasons for rejection. Empty if accepted."
+        },
+        "provenance_remediation": {
+          "type": "object",
+          "properties": {
+            "status": { "type": "string", "enum": ["stub_verified"] },
+            "note": { "type": "string", "maxLength": 500 },
+            "remediated_at": { "type": "string", "format": "date-time" },
+            "original_provenance_confirmed": { "type": ["boolean", "null"] }
+          },
+          "required": ["status", "remediated_at"],
+          "additionalProperties": false
         }
       }
     },

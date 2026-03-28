@@ -5,6 +5,25 @@
  * Global rules are non-overridable. Repo policies add surface-specific requirements.
  */
 
+function deepMerge(target, source) {
+  const result = { ...target };
+  for (const key of Object.keys(source)) {
+    if (
+      source[key] !== null &&
+      typeof source[key] === 'object' &&
+      !Array.isArray(source[key]) &&
+      result[key] !== null &&
+      typeof result[key] === 'object' &&
+      !Array.isArray(result[key])
+    ) {
+      result[key] = deepMerge(result[key], source[key]);
+    } else {
+      result[key] = source[key];
+    }
+  }
+  return result;
+}
+
 /**
  * Resolve the effective surface policy for a given product surface.
  * Repo policy overrides global defaults per surface.
@@ -18,7 +37,7 @@ function resolveSurfacePolicy(surface, globalPolicy, repoPolicy) {
   const defaults = globalPolicy.defaults || {};
 
   if (repoPolicy?.surfaces?.[surface]) {
-    return { ...defaults, ...repoPolicy.surfaces[surface] };
+    return deepMerge(defaults, repoPolicy.surfaces[surface]);
   }
 
   return defaults;
@@ -113,30 +132,33 @@ export function validatePolicy(submission, { globalPolicy, repoPolicy }) {
     }
   }
 
-  // CI requirements (applied per surface)
-  if (submission.ci_checks) {
-    for (const sr of submission.scenario_results || []) {
-      const surface = sr.product_surface;
-      const surfacePolicy = resolveSurfacePolicy(surface, globalPolicy, repoPolicy);
-      const ciReqs = surfacePolicy.ci_requirements;
+  const uniqueSurfaces = [...new Set((submission.scenario_results || []).map(sr => sr.product_surface))];
 
-      if (ciReqs?.tests_must_pass) {
-        const failingTests = submission.ci_checks.filter(
-          c => c.kind === 'test' && c.status === 'fail'
-        );
-        if (failingTests.length > 0) {
-          const ids = failingTests.map(c => c.id).join(', ');
-          errors.push(`surface[${surface}]: CI tests must pass but [${ids}] failed`);
-        }
+  for (const surface of uniqueSurfaces) {
+    const surfacePolicy = resolveSurfacePolicy(surface, globalPolicy, repoPolicy);
+    const ciReqs = surfacePolicy.ci_requirements;
+    if (!ciReqs) continue;
+
+    if (ciReqs.tests_must_pass && submission.ci_checks) {
+      const failingTests = submission.ci_checks.filter(
+        c => c.kind === 'test' && c.status === 'fail'
+      );
+      if (failingTests.length > 0) {
+        const ids = failingTests.map(c => c.id).join(', ');
+        errors.push(`surface[${surface}]: CI tests must pass but [${ids}] failed`);
       }
+    }
 
-      if (ciReqs?.coverage_min != null) {
-        const coverageCheck = submission.ci_checks.find(c => c.kind === 'coverage');
-        if (coverageCheck && coverageCheck.value < ciReqs.coverage_min) {
-          errors.push(
-            `surface[${surface}]: coverage ${coverageCheck.value}% is below minimum ${ciReqs.coverage_min}%`
-          );
-        }
+    if (ciReqs.coverage_min != null) {
+      const coverageCheck = submission.ci_checks?.find(c => c.kind === 'coverage');
+      if (!coverageCheck) {
+        errors.push(
+          `surface[${surface}]: coverage_min is ${ciReqs.coverage_min}% but no coverage data provided`
+        );
+      } else if (coverageCheck.value < ciReqs.coverage_min) {
+        errors.push(
+          `surface[${surface}]: coverage ${coverageCheck.value}% is below minimum ${ciReqs.coverage_min}%`
+        );
       }
     }
   }

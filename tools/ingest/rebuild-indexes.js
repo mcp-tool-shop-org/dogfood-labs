@@ -9,8 +9,9 @@
  * Regenerated on every accepted/rejected write in Phase 1.
  */
 
-import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync } from 'node:fs';
+import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, renameSync } from 'node:fs';
 import { join, relative } from 'node:path';
+import { randomBytes } from 'node:crypto';
 
 /**
  * Recursively find all .json files under a directory.
@@ -62,8 +63,12 @@ export function rebuildIndexes(repoRoot, options = {}) {
   mkdirSync(indexDir, { recursive: true });
 
   // Collect all records (accepted + rejected)
-  const acceptedFiles = findJsonFiles(join(repoRoot, 'records'))
-    .filter(f => !f.includes('_rejected'));
+  const recordsDir = join(repoRoot, 'records');
+  const acceptedFiles = findJsonFiles(recordsDir)
+    .filter(f => {
+      const rel = relative(recordsDir, f);
+      return !rel.startsWith('_rejected/') && !rel.startsWith('_rejected\\');
+    });
   const rejectedFiles = findJsonFiles(join(repoRoot, 'records', '_rejected'));
 
   const allRecords = [];
@@ -150,9 +155,17 @@ export function rebuildIndexes(repoRoot, options = {}) {
   const failingPath = join(indexDir, 'failing.json');
   const stalePath = join(indexDir, 'stale.json');
 
-  writeFileSync(latestPath, JSON.stringify(latestByRepo, null, 2) + '\n', 'utf-8');
-  writeFileSync(failingPath, JSON.stringify(failing, null, 2) + '\n', 'utf-8');
-  writeFileSync(stalePath, JSON.stringify(stale, null, 2) + '\n', 'utf-8');
+  const tmpSuffix = randomBytes(4).toString('hex');
+  const latestTmp = `${latestPath}.${tmpSuffix}.tmp`;
+  const failingTmp = `${failingPath}.${tmpSuffix}.tmp`;
+  const staleTmp = `${stalePath}.${tmpSuffix}.tmp`;
+
+  writeFileSync(latestTmp, JSON.stringify(latestByRepo, null, 2) + '\n', 'utf-8');
+  renameSync(latestTmp, latestPath);
+  writeFileSync(failingTmp, JSON.stringify(failing, null, 2) + '\n', 'utf-8');
+  renameSync(failingTmp, failingPath);
+  writeFileSync(staleTmp, JSON.stringify(stale, null, 2) + '\n', 'utf-8');
+  renameSync(staleTmp, stalePath);
 
   return { latestByRepo, failing, stale };
 }

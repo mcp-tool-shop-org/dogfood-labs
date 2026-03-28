@@ -23,14 +23,31 @@ import { computeVerdict } from './validators/verdict.js';
  * @returns {Promise<object>} Persisted record (accepted or rejected)
  */
 export async function verify(submission, options) {
+  if (!submission || typeof submission !== 'object') {
+    const now = new Date().toISOString();
+    return {
+      schema_version: '1.0.0',
+      verification: {
+        status: 'rejected',
+        verified_at: now,
+        rejection_reasons: ['submission is null or not an object']
+      }
+    };
+  }
+
   const { globalPolicy, repoPolicy, provenance, policyVersion } = options;
   const now = new Date().toISOString();
   const reasons = [];
 
   // 1. Schema validation
-  const schemaResult = validateSubmissionSchema(submission);
-  if (!schemaResult.valid) {
-    reasons.push(...schemaResult.errors.map(e => `schema: ${e}`));
+  let schemaResult = { valid: false, errors: [] };
+  try {
+    schemaResult = validateSubmissionSchema(submission);
+    if (!schemaResult.valid) {
+      reasons.push(...schemaResult.errors.map(e => `schema: ${e}`));
+    }
+  } catch (e) {
+    reasons.push('validator error: ' + e.message);
   }
 
   // 2. Reject if submission includes verifier-owned fields
@@ -52,7 +69,7 @@ export async function verify(submission, options) {
     } catch (err) {
       reasons.push(`provenance: verification failed: ${err.message}`);
     }
-    if (!provenanceConfirmed) {
+    if (!provenanceConfirmed && !reasons.some(r => r.startsWith('provenance:'))) {
       reasons.push('provenance: source run could not be confirmed');
     }
   }
@@ -60,17 +77,25 @@ export async function verify(submission, options) {
   // 4. Step results validation (only if schema passed)
   if (schemaResult.valid && submission.scenario_results) {
     for (const scenario of submission.scenario_results) {
-      const stepErrors = validateStepResults(scenario);
-      reasons.push(...stepErrors.map(e => `steps[${scenario.scenario_id}]: ${e}`));
+      try {
+        const stepErrors = validateStepResults(scenario);
+        reasons.push(...stepErrors.map(e => `steps[${scenario.scenario_id}]: ${e}`));
+      } catch (e) {
+        reasons.push('validator error: ' + e.message);
+      }
     }
   }
 
   // 5. Policy evaluation (only if schema passed)
   let policyValid = false;
   if (schemaResult.valid) {
-    const policyResult = validatePolicy(submission, { globalPolicy, repoPolicy });
-    policyValid = policyResult.valid;
-    reasons.push(...policyResult.errors.map(e => `policy: ${e}`));
+    try {
+      const policyResult = validatePolicy(submission, { globalPolicy, repoPolicy });
+      policyValid = policyResult.valid;
+      reasons.push(...policyResult.errors.map(e => `policy: ${e}`));
+    } catch (e) {
+      reasons.push('validator error: ' + e.message);
+    }
   }
 
   // 6. Compute verdict
@@ -91,7 +116,7 @@ export async function verify(submission, options) {
 
   // 7. Assemble persisted record
   const persisted = {
-    schema_version: submission.schema_version || '1.0.0',
+    schema_version: '1.0.0',
     policy_version: policyVersion,
     run_id: submission.run_id,
     repo: submission.repo,

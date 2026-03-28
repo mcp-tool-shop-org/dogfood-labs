@@ -25,13 +25,25 @@ export function validateStepResults(scenarioResult) {
     return errors;
   }
 
-  // Check for duplicate step IDs
+  const VALID_STATUSES = new Set(['pass', 'fail', 'blocked', 'skip']);
+
+  for (let i = 0; i < step_results.length; i++) {
+    const step = step_results[i];
+    if (step == null || typeof step !== 'object' || typeof step.step_id !== 'string') {
+      errors.push(`step_results[${i}] is malformed: must be a non-null object with a string step_id`);
+    }
+  }
+
   const seenIds = new Set();
   for (const step of step_results) {
+    if (step == null || typeof step !== 'object') continue;
     if (seenIds.has(step.step_id)) {
       errors.push(`duplicate step_id: ${step.step_id}`);
     }
     seenIds.add(step.step_id);
+    if (step.status != null && !VALID_STATUSES.has(step.status)) {
+      errors.push(`step "${step.step_id}" has unknown status: "${step.status}"`);
+    }
   }
 
   // A scenario cannot be "pass" if any step is "fail" or "blocked"

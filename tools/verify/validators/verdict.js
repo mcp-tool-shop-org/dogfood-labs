@@ -40,8 +40,12 @@ export function computeVerdict(proposed, context) {
   // Compute the worst scenario verdict
   let worstScenarioRank = VERDICT_RANK.pass;
   for (const sr of scenarioResults || []) {
-    const rank = VERDICT_RANK[sr.verdict];
-    if (rank != null && rank < worstScenarioRank) {
+    let rank = VERDICT_RANK[sr.verdict];
+    if (rank == null) {
+      rank = VERDICT_RANK.fail;
+      downgrade_reasons.push('verdict: unrecognized scenario verdict "' + sr.verdict + '", treating as fail');
+    }
+    if (rank < worstScenarioRank) {
       worstScenarioRank = rank;
     }
   }
@@ -58,7 +62,13 @@ export function computeVerdict(proposed, context) {
 
   // The verified verdict is the worse of proposed and floor
   // (we never upgrade, so if proposed is worse than floor, keep proposed)
-  const proposedRank = proposed ? (VERDICT_RANK[proposed] ?? VERDICT_RANK.pass) : VERDICT_RANK.pass;
+  if (proposed && VERDICT_RANK[proposed] == null) {
+    downgrade_reasons.push('verdict: unrecognized proposed verdict "' + proposed + '", treating as fail');
+  }
+  if (!proposed) {
+    downgrade_reasons.push('verdict: no proposed verdict provided, defaulting to fail');
+  }
+  const proposedRank = proposed ? (VERDICT_RANK[proposed] ?? VERDICT_RANK.fail) : VERDICT_RANK.fail;
   const floorRank = VERDICT_RANK[floorVerdict];
 
   let verified;
@@ -72,7 +82,7 @@ export function computeVerdict(proposed, context) {
     }
   } else {
     // Proposed is same or worse — keep proposed (never upgrade)
-    verified = proposed || 'pass';
+    verified = proposed || 'fail';
   }
 
   return {

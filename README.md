@@ -75,7 +75,7 @@ See [enforcement-tiers.md](docs/enforcement-tiers.md) for details.
 bash verify.sh
 ```
 
-Runs all tests across verifier, ingestion, reporting, and portfolio tools (69 tests).
+Runs all tests across verifier, ingestion, reporting, and portfolio tools (76+ tests).
 
 ## Repo Layout
 

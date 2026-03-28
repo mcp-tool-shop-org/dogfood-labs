@@ -34,10 +34,16 @@ export function loadGlobalPolicy(repoRoot) {
  */
 export function loadRepoPolicy(repoSlug, repoRoot) {
   const [org, repo] = repoSlug.split('/');
+  if (!org || !repo || /\.\.|[/\\]/.test(org) || /\.\.|[/\\]/.test(repo)) return null;
   const path = join(repoRoot, 'policies', 'repos', org, `${repo}.yaml`);
 
   if (!existsSync(path)) return null;
-  return yaml.load(readFileSync(path, 'utf-8'));
+  try {
+    return yaml.load(readFileSync(path, 'utf-8'));
+  } catch {
+    console.warn(`load-context: malformed YAML in repo policy for ${repoSlug}`);
+    return null;
+  }
 }
 
 /**
@@ -50,6 +56,7 @@ export function loadRepoPolicy(repoSlug, repoRoot) {
 export function localScenarioFetcher(repoRoot) {
   return {
     async fetch(scenarioId) {
+      if (!/^[\w-]+$/.test(scenarioId)) return null;
       const path = join(repoRoot, 'dogfood', 'scenarios', `${scenarioId}.yaml`);
       if (!existsSync(path)) return null;
       return yaml.load(readFileSync(path, 'utf-8'));
@@ -67,8 +74,13 @@ export function localScenarioFetcher(repoRoot) {
  * @returns {object} Scenario fetch adapter
  */
 export function githubScenarioFetcher(token, repoSlug, commitSha) {
+  const [org, repo] = repoSlug.split('/');
+  if (!org || !repo || /\.\.|[/\\]/.test(org) || /\.\.|[/\\]/.test(repo)) {
+    return { async fetch() { return null; } };
+  }
   return {
     async fetch(scenarioId) {
+      if (!/^[\w-]+$/.test(scenarioId)) return null;
       const path = `dogfood/scenarios/${scenarioId}.yaml`;
       const url = `https://api.github.com/repos/${repoSlug}/contents/${path}?ref=${commitSha}`;
 

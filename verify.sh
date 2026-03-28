@@ -5,23 +5,19 @@ echo "=== dogfood-labs verify ==="
 
 echo ""
 echo "--- Verifier tests ---"
-cd tools/verify && npm ci --silent && npm test
-cd ../..
+(cd tools/verify && npm ci --silent && npm test)
 
 echo ""
 echo "--- Ingest tests ---"
-cd tools/ingest && npm ci --silent && npm test
-cd ../..
+(cd tools/ingest && npm ci --silent && npm test)
 
 echo ""
 echo "--- Report tests ---"
-cd tools/report && node --test report.test.js
-cd ../..
+(cd tools/report && node --test report.test.js)
 
 echo ""
 echo "--- Portfolio tests ---"
-cd tools/portfolio && node --test generate.test.js
-cd ../..
+(cd tools/portfolio && node --test generate.test.js)
 
 echo ""
 echo "--- Schema validation ---"

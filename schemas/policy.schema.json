@@ -44,6 +44,9 @@
     "surfaces": {
       "type": "object",
       "description": "Per-surface policy. Keys are product_surface values.",
+      "propertyNames": {
+        "enum": ["cli", "desktop", "web", "api", "mcp-server", "npm-package", "plugin", "library"]
+      },
       "additionalProperties": {
         "$ref": "#/$defs/surface_policy"
       }

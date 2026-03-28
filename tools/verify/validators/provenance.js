@@ -49,7 +49,7 @@ export function githubProvenance(token) {
       // Extract owner/repo from run_url
       // Format: https://github.com/{owner}/{repo}/actions/runs/{id}
       const match = run_url.match(
-        /github\.com\/([^/]+)\/([^/]+)\/actions\/runs\/(\d+)/
+        /^https:\/\/github\.com\/([^/]+)\/([^/]+)\/actions\/runs\/(\d+)$/
       );
       if (!match) return false;
 
@@ -60,20 +60,29 @@ export function githubProvenance(token) {
 
       const apiUrl = `https://api.github.com/repos/${owner}/${repo}/actions/runs/${provider_run_id}`;
 
-      const resp = await fetch(apiUrl, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          Accept: 'application/vnd.github+json',
-          'X-GitHub-Api-Version': '2022-11-28'
-        }
-      });
+      let run;
+      try {
+        const resp = await fetch(apiUrl, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            Accept: 'application/vnd.github+json',
+            'X-GitHub-Api-Version': '2022-11-28'
+          }
+        });
 
-      if (!resp.ok) return false;
+        if (!resp.ok) return false;
 
-      const run = await resp.json();
+        run = await resp.json();
+      } catch {
+        return false;
+      }
 
-      // Verify the run exists and has a matching head_sha
-      return run.id === Number(provider_run_id) && run.status != null;
+      if (run.id !== Number(provider_run_id) || run.status == null) return false;
+
+      if (source.commit_sha && run.head_sha !== source.commit_sha) return false;
+      if (source.repo && run.repository?.full_name !== source.repo) return false;
+
+      return true;
     }
   };
 }

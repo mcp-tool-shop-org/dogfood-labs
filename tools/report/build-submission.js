@@ -72,8 +72,18 @@ export function buildSubmission(params) {
     notes
   } = params;
 
+  const required = { repo, commitSha, startedAt, finishedAt, scenarioResults };
+  for (const [name, value] of Object.entries(required)) {
+    if (value == null) throw new Error(`buildSubmission: missing required param "${name}"`);
+  }
+
+  if (typeof overallVerdict !== 'string') {
+    throw new Error('overallVerdict must be a string, not ' + typeof overallVerdict);
+  }
+
   const startMs = new Date(startedAt).getTime();
   const endMs = new Date(finishedAt).getTime();
+  const durationMs = (isNaN(endMs - startMs) || (endMs - startMs) < 0) ? null : endMs - startMs;
 
   const submission = {
     schema_version: '1.0.0',
@@ -95,7 +105,7 @@ export function buildSubmission(params) {
     timing: {
       started_at: startedAt,
       finished_at: finishedAt,
-      duration_ms: endMs - startMs
+      duration_ms: durationMs
     },
     ...(ciChecks && ciChecks.length > 0 ? { ci_checks: ciChecks } : {}),
     scenario_results: scenarioResults,

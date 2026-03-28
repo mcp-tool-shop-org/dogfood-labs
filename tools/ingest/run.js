@@ -118,7 +118,11 @@ export async function ingest(submission, options) {
 
   // 6. Rebuild indexes
   if (written) {
-    rebuildIndexes(repoRoot);
+    try {
+      rebuildIndexes(repoRoot);
+    } catch (err) {
+      console.error(`WARNING: record persisted but index rebuild failed: ${err.message} — indexes may be stale`);
+    }
   }
 
   return { record, path, written, duplicate: false };
@@ -160,17 +164,22 @@ if (isMain) {
     submissionJson = Buffer.concat(chunks).toString('utf-8');
   }
 
-  let submission = JSON.parse(submissionJson);
-  // Defensive: if payload arrived double-encoded (string within JSON), re-parse
-  if (typeof submission === 'string') {
-    submission = JSON.parse(submission);
+  let submission;
+  try {
+    submission = JSON.parse(submissionJson);
+    if (typeof submission === 'string') {
+      submission = JSON.parse(submission);
+    }
+  } catch (err) {
+    console.error(`ERROR: invalid JSON payload: ${err.message}`);
+    process.exit(2);
   }
 
   // Resolve provenance adapter — explicit, never implicit
   let provenance;
   if (provenanceMode === 'stub') {
     // Structural anti-misuse: stub only allowed outside CI
-    if (process.env.CI === 'true' || process.env.GITHUB_ACTIONS === 'true') {
+    if (process.env.CI || process.env.GITHUB_ACTIONS) {
       console.error('ERROR: --provenance=stub is not allowed in CI/production. Use --provenance=github.');
       process.exit(2);
     }
@@ -196,20 +205,25 @@ if (isMain) {
     process.exit(2);
   }
 
-  const result = await ingest(submission, { repoRoot, provenance });
+  try {
+    const result = await ingest(submission, { repoRoot, provenance });
 
-  if (result.duplicate) {
-    console.log(JSON.stringify({ status: 'duplicate', run_id: submission.run_id }));
-    process.exit(0);
+    if (result.duplicate) {
+      console.log(JSON.stringify({ status: 'duplicate', run_id: submission.run_id }));
+      process.exit(0);
+    }
+
+    console.log(JSON.stringify({
+      status: result.record.verification.status,
+      run_id: result.record.run_id,
+      verdict: result.record.overall_verdict.verified,
+      path: result.path,
+      written: result.written
+    }));
+
+    process.exit(result.record.verification.status === 'accepted' ? 0 : 1);
+  } catch (err) {
+    console.error(`ERROR: ingest failed: ${err.message}`);
+    process.exit(2);
   }
-
-  console.log(JSON.stringify({
-    status: result.record.verification.status,
-    run_id: result.record.run_id,
-    verdict: result.record.overall_verdict.verified,
-    path: result.path,
-    written: result.written
-  }));
-
-  process.exit(result.record.verification.status === 'accepted' ? 0 : 1);
 }

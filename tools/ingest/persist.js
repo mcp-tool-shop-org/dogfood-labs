@@ -29,12 +29,24 @@ export function computeRecordPath(record, repoRoot) {
     throw new Error(`invalid repo format: ${record.repo}`);
   }
 
+  const unsafeSegment = /[.\\/]/;
+  if (unsafeSegment.test(org) || unsafeSegment.test(repo)) {
+    throw new Error(`unsafe repo segment: ${record.repo}`);
+  }
+
+  if (!/^[\w-]+$/.test(record.run_id)) {
+    throw new Error(`unsafe run_id: ${record.run_id}`);
+  }
+
   const finishedAt = record.timing?.finished_at;
   if (!finishedAt) {
     throw new Error('record missing timing.finished_at');
   }
 
   const date = new Date(finishedAt);
+  if (isNaN(date.getTime())) {
+    throw new Error('Invalid finished_at timestamp');
+  }
   const year = String(date.getUTCFullYear());
   const month = String(date.getUTCMonth() + 1).padStart(2, '0');
   const day = String(date.getUTCDate()).padStart(2, '0');
