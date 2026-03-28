@@ -1,0 +1,3 @@
+# Ignore in-progress swarm state (per-repo working directories)
+# Keep protocol, templates, and schema (committed infrastructure)
+*--*/

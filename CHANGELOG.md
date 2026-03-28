@@ -4,6 +4,17 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.1.0] - 2026-03-28
+
+### Added
+- Swarm Protocol v1.0: 8-phase lifecycle for 10+ parallel Claude agents
+- PROTOCOL.md operator guide with 12 Laws and coordinator checklist
+- Agent prompt templates: explore, audit, remediate (swarms/templates/)
+- Manifest schema for swarm checkpoints (swarms/manifest-schema.json)
+- Dual persistence bridge: dogfood records + repo-knowledge audit DB (tools/swarm/persist-results.js)
+- Swarm-audit dogfood scenario (dogfood/scenarios/swarm-audit.yaml)
+- 24 new tests for swarm persistence layer (93 total)
+
 ## [1.0.1] - 2026-03-28
 
 ### Security
