@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
+## [1.2.0] - 2026-03-28
+
+### Changed
+- Swarm Protocol upgraded from v1.0 (8-phase) to v2.0 (9-phase play)
+- Health Pass now has 3 stages: A (bug/security), B (proactive), C (humanization)
+- Feature Pass: audit → review → execution → repeat (user approves before code)
+- 12 Laws replaced with 10 Key Principles
+- Domain assignments formalized (backend, bridge, tests, CI/docs, frontend)
+
+### Added
+- Humanization stage: UX polish treated with same rigor as bug fixes
+- Audit record for claude-collaborate v1.1.0 (35→129 tests, full 9-phase completion)
+
+### Proven
+- claude-collaborate: Health A (2 waves) + B (1) + C (1) + Feature P0/P1 (2) + Re-audit (1) + Final (1) = v1.1.0
+
 ## [1.1.0] - 2026-03-28
 
 ### Added

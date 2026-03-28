@@ -1,316 +1,345 @@
-# Swarm Protocol v1.0
+# Dogfood Swarm Protocol v2.0
 
 ## Overview
 
-The Swarm Protocol orchestrates 10+ parallel Claude Code agents to audit and remediate a single repository. A human coordinator reads this document and executes it step by step. Each swarm produces structured audit findings, remediation commits, and a persisted evidence record in both `dogfood-labs` and the `repo-knowledge` database. All artifacts live under `F:\AI\dogfood-labs\swarms\<org>--<repo>\`.
+The Dogfood Swarm Protocol orchestrates parallel Claude Code agents through a 9-phase play that first establishes a clean bill of health, then builds features to production readiness. A human coordinator reads this document and executes it step by step. All artifacts live under `F:\AI\dogfood-labs\swarms\<org>--<repo>\`.
 
 ## Prerequisites
 
 - Target repo exists in `mcp-tool-shop-org` (or `mcp-tool-shop` for marketing repos)
 - Local clone at `F:\AI\<repo-name>` with `origin` pointing to the correct remote
-- `repo-knowledge` MCP server running (provides `audit_submit`, `audit_controls_list`, `audit_posture`)
-- `dogfood-labs` cloned at `F:\AI\dogfood-labs`
-- Control registry available: `F:\AI\repo-knowledge\data\control-registry.json`
 - Git working tree clean on the target repo (no uncommitted changes)
+- Save point tag created before first wave for easy revert
 
 ---
 
-## Phase 1: CLAIM
+## The 9-Phase Play
 
-Create the swarm workspace and lock the target.
+The protocol has two repeating passes and a final test phase:
 
-1. Generate a swarm ID: `swarm-<unix-timestamp>-<4-random-hex>` (e.g. `swarm-1711500000-a3f1`)
-2. Create directory: `F:\AI\dogfood-labs\swarms\<org>--<repo>\`
-3. Write `manifest.json`:
+- **Health Pass** (Phases 1-4) — Audit and fix bugs, security, code quality, type safety, test coverage, doc accuracy. Repeat until clean bill of health.
+- **Feature Pass** (Phases 5-8) — Audit and build missing capabilities, feature gaps, UX improvements. Repeat until production-ready.
+- **Final** (Phase 9) — Comprehensive test validation.
+
+---
+
+## Health Pass (Phases 1-4) — Three stages to clean bill of health
+
+The Health Pass has three distinct stages. Each stage uses the same Audit → Review → Amend → Repeat cycle (Phases 1-4), but with a different lens:
+
+- **Stage A: Bug/Security Fix** — Find and fix defects. Repeat until 0 CRITICAL + 0 HIGH.
+- **Stage B: Proactive Health** — Fresh audit with proactive lens (defensive coding, observability, graceful degradation, future-proofing). Review findings.
+- **Stage C: Humanization** — Amend the proactive findings with emphasis on USER EXPERIENCE: error messages that help, reconnection feedback, responsive layouts, loading states, state persistence, accessibility. This is the bridge between "not broken" and "actually good to use."
+
+**Key insight:** Proactive health findings are NOT afterthoughts — they represent the gap between "code that works" and "code that respects the user." The humanization amend wave treats these findings with the same rigor as bug fixes because polish IS quality.
+
+---
+
+### Phase 1: HEALTH AUDIT
+
+Launch 5 parallel agents, one per domain, to audit all components.
+
+1. Create a save point tag before the first wave:
+   ```bash
+   cd F:/AI/<repo>
+   git tag swarm-save-$(date +%s)
+   ```
+
+2. Launch 5 agents with these domain assignments:
+
+   | Domain | Scope | Typical Files |
+   |--------|-------|---------------|
+   | Backend | Core server logic | server.py, main modules |
+   | Bridge | Secondary services | ws_bridge.py, API bridges |
+   | Tests | Test suite | tests/*.py, conftest.py |
+   | CI/Docs | Infrastructure + docs | .github/workflows/, *.md, config |
+   | Frontend | UI layer | *.html, *.css, *.js |
+
+   For larger repos, expand up to 10 agents by splitting domains.
+
+3. Each agent audits its domain. The audit lens depends on the current stage:
+
+   **Stage A (Bug/Security Fix):**
+   - Bugs and logic errors
+   - Security vulnerabilities
+   - Code quality issues
+   - Type safety violations
+   - Test coverage gaps
+   - Documentation accuracy
+
+   **Stage B (Proactive Health):**
+   - Defensive coding gaps (missing guards, unchecked returns)
+   - Observability (logging, metrics, health checks)
+   - Graceful degradation (offline behavior, partial failure handling)
+   - Future-proofing (extensibility, migration paths)
+
+   **Stage C (Humanization):**
+   - Error messages: do they help the user fix the problem?
+   - Reconnection/retry feedback: does the user know what's happening?
+   - Responsive layouts: does the UI work at all breakpoints?
+   - Loading states: is there feedback during async operations?
+   - State persistence: does the app remember user context across sessions?
+   - Accessibility: keyboard navigation, screen reader support, contrast
+
+4. Agent output format:
+   ```json
+   {
+     "domain": "backend",
+     "stage": "A|B|C",
+     "findings": [
+       {
+         "id": "F-001",
+         "severity": "CRITICAL|HIGH|MEDIUM|LOW",
+         "category": "bug|security|quality|types|tests|docs|defensive|observability|degradation|ux|accessibility",
+         "file": "path/to/file.py",
+         "line": 42,
+         "description": "What is wrong",
+         "recommendation": "How to fix it"
+       }
+     ],
+     "summary": "Brief domain health assessment"
+   }
+   ```
+
+### Phase 2: REVIEW
+
+Coordinator presents consolidated findings to the user.
+
+1. Merge all agent outputs into a single findings list.
+2. Sort by severity: CRITICAL > HIGH > MEDIUM > LOW.
+3. Present to user with counts per severity level.
+4. User approves, modifies, or rejects findings before any code is written.
+5. Record approved findings in `manifest.json`.
+
+### Phase 3: AMEND
+
+Launch 5 parallel agents with exclusive file ownership to fix all approved findings.
+
+1. Map approved findings back to domain agents. Each agent only edits files within its domain.
+2. HARD RULE: No agent edits a file outside its assignment. Validate with:
+   ```bash
+   cd F:/AI/<repo>
+   git diff --name-only | sort > /tmp/changed-files.txt
+   ```
+   Cross-reference every changed file against domain assignments.
+
+3. After all agents complete, verify build passes:
+   ```bash
+   # Node/TypeScript
+   npm run lint && tsc --noEmit && npm test
+
+   # Rust
+   cargo check && cargo test
+
+   # Python
+   ruff check . && pytest
+   ```
+
+4. If build fails, dispatch targeted fix agents for the failing domain only.
+
+### Phase 4: REPEAT
+
+Return to Phase 1 for a fresh audit against the remediated codebase.
+
+- Each cycle is a clean audit — agents do not carry forward prior findings.
+- **Checkpoint with user every 3 iterations** to confirm direction.
+- **Stage A:** Continue until audit returns 0 CRITICAL + 0 HIGH. Then advance to Stage B.
+- **Stage B:** Run one proactive audit cycle. Review findings. Then advance to Stage C.
+- **Stage C:** Amend the proactive findings through the humanization lens. When complete = **clean bill of health**. Proceed to Feature Pass.
+
+---
+
+## Feature Pass (Phases 5-8) — Repeat until production-ready
+
+### Phase 5: FEATURE-FOCUSED AUDIT
+
+Agents audit for capabilities, not defects.
+
+1. Launch 5 agents (same domain split) to evaluate:
+   - Missing capabilities and feature gaps
+   - Production readiness (error handling, logging, graceful degradation)
+   - UX improvements (CLI ergonomics, API surface, user-facing messages)
+   - Performance opportunities
+   - Integration completeness
+
+2. Agent output format:
+   ```json
+   {
+     "domain": "backend",
+     "features": [
+       {
+         "id": "FT-001",
+         "priority": "CRITICAL|HIGH|MEDIUM|LOW",
+         "category": "missing-feature|ux|performance|integration",
+         "description": "What is needed",
+         "scope": ["file1.py", "file2.py"],
+         "effort": "small|medium|large",
+         "recommendation": "How to implement"
+       }
+     ],
+     "summary": "Domain feature assessment"
+   }
+   ```
+
+### Phase 6: REVIEW
+
+Coordinator presents feature findings to user BEFORE any code is written.
+
+1. Merge all feature findings, sorted by priority.
+2. Present to user with effort estimates.
+3. User approves which features to build in this wave.
+4. **No code is written until user approves the feature list.**
+
+### Phase 7: EXECUTION
+
+Agents build/improve approved features with exclusive file ownership.
+
+1. Map approved features to domain agents.
+2. HARD RULE: No agent edits a file outside its assignment.
+3. Launch up to 5 agents in parallel.
+4. After all agents complete, verify build passes (lint + typecheck + tests).
+5. If new tests are needed for new features, the Tests domain agent writes them.
+
+### Phase 8: REPEAT
+
+Return to Phase 5 for a fresh feature audit.
+
+- **Checkpoint with user every 3 iterations.**
+- Continue until the codebase is production-ready (no CRITICAL or HIGH feature gaps remain).
+
+---
+
+## Final (Phase 9)
+
+### Phase 9: TEST
+
+Final comprehensive test pass validating everything works together.
+
+1. Run the full test suite:
+   ```bash
+   # Node/TypeScript
+   npm run lint && tsc --noEmit && npm test
+
+   # Rust
+   cargo check && cargo test
+
+   # Python
+   ruff check . && pytest
+   ```
+
+2. Run integration/E2E tests if they exist.
+3. Verify no regressions from any wave.
+4. Record final test count and pass rate in manifest.
+5. If any failures, dispatch targeted fix agents and re-run.
+6. Mark manifest `status: "complete"`.
+
+---
+
+## Key Principles
+
+1. **Exclusive File Ownership** — No agent edits a file outside its assignment. Violations trigger revert.
+2. **Wave Size** — Max 5 agents per wave (one per domain). Expand to max 10 for large repos by splitting domains.
+3. **Severity Triage** — All findings are triaged CRITICAL/HIGH/MEDIUM/LOW. Remediation follows severity order.
+4. **Build After Every Wave** — Build must pass after every amend/execution wave (lint + typecheck + tests).
+5. **Save Point** — Tag before first wave for easy revert.
+6. **Three-Stage Health** — Stage A fixes bugs/security, Stage B applies proactive hardening, Stage C humanizes UX. All three complete before features.
+7. **Health Before Features** — Feature execution only begins after clean bill of health.
+8. **User Reviews First** — User reviews feature audit BEFORE execution begins. No code without approval.
+9. **Manifest Checkpoint** — `manifest.json` is the single source of swarm state for resumability.
+10. **Evidence Persisted** — Evidence persisted to repo-knowledge DB after each wave.
+
+---
+
+## Domain Agent Assignments
+
+| Domain | Scope | Typical Files |
+|--------|-------|---------------|
+| Backend | Core server logic | server.py, main modules, core packages |
+| Bridge | Secondary services, APIs | ws_bridge.py, API bridges, middleware |
+| Tests | Test suite, fixtures | tests/*.py, conftest.py, test helpers |
+| CI/Docs | Infrastructure + documentation | .github/workflows/, *.md, config files |
+| Frontend | UI layer | *.html, *.css, *.js, templates |
+
+Adjust domains to match the repo's architecture. The key constraint is that every file belongs to exactly one domain, and no two agents share files.
+
+---
+
+## Manifest Schema
 
 ```json
 {
-  "swarm_id": "swarm-1711500000-a3f1",
+  "swarm_id": "swarm-<unix-timestamp>-<4-random-hex>",
   "repo": "<org>/<repo>",
   "local_path": "F:\\AI\\<repo>",
   "commit_sha": "<HEAD commit>",
   "branch": "main",
   "started_at": "<ISO 8601>",
-  "status": "claimed",
-  "phases_completed": []
+  "status": "health-audit-a|health-audit-b|health-audit-c|review|amend|feature-audit|feature-review|execution|test|complete",
+  "save_point_tag": "swarm-save-<timestamp>",
+  "health_waves_completed": 0,
+  "feature_waves_completed": 0,
+  "findings_total": 0,
+  "findings_fixed": 0,
+  "tests_start": 0,
+  "tests_end": 0,
+  "completed_at": null
 }
 ```
-
-4. Check prior state:
-   - Call `audit_posture` MCP tool for the repo
-   - Read `F:\AI\dogfood-labs\indexes\latest-by-repo.json`
-   - Note existing posture and last audit date in `manifest.json` as `prior_state`
-
-5. Set `status: "claimed"` and commit the manifest.
-
----
-
-## Phase 2: EXPLORE
-
-Map the repo into auditable components.
-
-1. Launch 1-3 Explore agents. Each agent reads the full directory tree, README, and entry points.
-2. Agent task: identify logical components (modules, packages, services, subsystems).
-3. Coordinator merges agent outputs into `components.json`:
-
-```json
-[
-  {
-    "id": "comp-01",
-    "name": "core-engine",
-    "type": "library",
-    "paths": ["src/engine/", "src/types/"],
-    "language": "typescript",
-    "estimated_loc": 2400,
-    "has_tests": true,
-    "applicable_domains": ["SRC", "TST", "ERR", "DOC"]
-  }
-]
-```
-
-4. Rules:
-   - Target ~10 components. Merge files under 200 LOC into their nearest neighbor. Split modules over 5000 LOC.
-   - Every file in the repo must belong to exactly one component.
-   - Root config files (`package.json`, `tsconfig.json`, `Cargo.toml`, etc.) go into a `root-config` component owned by the coordinator, not agents.
-   - `applicable_domains` maps to the 19-domain control registry. Use `audit_controls_list` to get the domain list.
-
-5. Write `components.json` to the swarm directory. Update manifest: `status: "explored"`.
-
----
-
-## Phase 3: ASSIGN
-
-Map components to agent slots with strict file ownership.
-
-1. Read `components.json`. For each component, create an assignment:
-
-```json
-{
-  "agent_slot": 1,
-  "component_id": "comp-01",
-  "component_name": "core-engine",
-  "paths": ["src/engine/", "src/types/"],
-  "controls": ["SRC-001", "SRC-002", "TST-001", "ERR-001", "DOC-001"],
-  "wave": 1
-}
-```
-
-2. HARD RULE: No two agents share a file path. Validate with:
-   ```bash
-   # Extract all paths, sort, check for duplicates
-   jq -r '.[].paths[]' assignments.json | sort | uniq -d
-   ```
-   If any duplicates appear, reassign before proceeding.
-
-3. Shared config files (`root-config` component) are coordinator-only. No agent touches them.
-
-4. If more than 10 components exist, batch into waves. Wave 1 gets slots 1-10, Wave 2 gets 1-10 again after Wave 1 completes.
-
-5. Write `assignments.json` to the swarm directory. Update manifest: `status: "assigned"`.
-
----
-
-## Phase 4: AUDIT
-
-Launch parallel audit agents.
-
-1. For each assignment in the current wave, launch one agent (max 10 concurrent).
-2. Each agent receives this context:
-   - Component name, paths, and file list
-   - Applicable controls from the control registry
-   - Repo README and any component-level docs
-   - Audit standard reference: all 19 domains, 80 controls, posture derivation rules
-
-3. Agent prompt (fill variables from assignment):
-   ```
-   You are auditing component "{component_name}" of repo "{repo}".
-   Your file scope: {paths}
-   Applicable controls: {controls}
-
-   For each control:
-   - Evaluate: pass / fail / warn / not_applicable
-   - Provide evidence (file path + line or explanation)
-   - Record findings for any non-pass result
-
-   Output JSON: { controls: [...], findings: [...], summary: string }
-   ```
-
-4. Coordinator collects all agent outputs into `audit-results/` directory, one file per component: `audit-results/<component-id>.json`.
-
-5. Merge into `audit-summary.json`:
-   - Total controls evaluated
-   - Pass/fail/warn counts
-   - All findings ranked by severity (critical > high > medium > low)
-   - Derived posture per audit-standard rules
-
-6. Update manifest: `status: "audited"`, record `audit_summary` stats.
-
----
-
-## Phase 5: REMEDIATE
-
-Fix findings with strict file ownership.
-
-1. Read `audit-summary.json`. Sort findings: critical first, then high, medium, low.
-
-2. Group findings by component. Each component's findings become a remediation packet:
-   ```json
-   {
-     "agent_slot": 1,
-     "component_id": "comp-01",
-     "findings_to_fix": ["finding-001", "finding-003"],
-     "exclusive_paths": ["src/engine/", "src/types/"]
-   }
-   ```
-
-3. HARD RULE: agents only edit files within their `exclusive_paths`. No exceptions.
-
-4. Launch up to 10 remediation agents in parallel. Each agent:
-   - Reads findings assigned to it
-   - Fixes what it can
-   - Reports back: `{ fixed: [...], accepted_risk: [...], remaining: [...] }`
-
-5. Coordinator collects results into `remediation-results/<component-id>.json`.
-
-6. Update manifest: `status: "remediated"`.
-
----
-
-## Phase 6: VERIFY
-
-Confirm nothing is broken.
-
-1. Run the repo's verification commands:
-   ```bash
-   # Node/TypeScript
-   npm test && npm run build
-
-   # Rust
-   cargo test && cargo check
-
-   # Python
-   pytest && ruff check .
-   ```
-
-2. If failures occur:
-   - Identify which files are involved (from error output)
-   - Map files back to their component owner
-   - Dispatch targeted fix agents for those specific components only
-   - Re-run verification
-
-3. Validate file ownership was respected:
-   ```bash
-   cd F:/AI/<repo>
-   git diff --name-only HEAD~1 | sort > /tmp/changed-files.txt
-   ```
-   Cross-reference every changed file against `assignments.json`. If any file was edited by a non-owner, revert that file and reassign.
-
-4. Loop until tests pass and ownership is clean.
-
-5. Update manifest: `status: "verified"`.
-
----
-
-## Phase 7: PERSIST
-
-Write evidence to both dogfood-labs and repo-knowledge.
-
-1. Run the persistence tool:
-   ```bash
-   node F:/AI/dogfood-labs/tools/swarm/persist-results.js F:/AI/dogfood-labs/swarms/<org>--<repo>/manifest.json
-   ```
-   This builds the dogfood submission record and ingests it locally.
-
-2. Call `audit_submit` MCP tool with the structured payload:
-   - repo, commit_sha, controls evaluated, findings, posture, evidence references
-   - Format per `F:\AI\repo-knowledge\AUDIT-CONTRACT.md`
-
-3. Both paths must succeed. If either fails, log the error in `manifest.json` under `persist_errors[]` and retry up to 3 times.
-
-4. Update manifest: `status: "persisted"`.
-
----
-
-## Phase 8: RELEASE
-
-Ship the results.
-
-1. Stage and commit remediation changes in the target repo:
-   ```bash
-   cd F:/AI/<repo>
-   git add -A
-   git commit -m "audit: swarm remediation <swarm_id>
-
-   Findings: <N> total, <fixed> fixed, <accepted> accepted risk
-   Posture: <posture>"
-   ```
-
-2. Push to remote:
-   ```bash
-   git push origin main
-   ```
-
-3. Verify CI passes:
-   ```bash
-   gh run list --repo <org>/<repo> --limit 1
-   ```
-   If CI fails, return to Phase 6.
-
-4. Update manifest: `status: "complete"`, `completed_at: <ISO 8601>`.
-
-5. Commit the final swarm directory to dogfood-labs.
-
----
-
-## The 12 Laws
-
-1. **Single Writer** -- Each file has exactly one agent owner. No shared writes, ever.
-2. **Coordinator Owns Config** -- Root config files are coordinator-only territory.
-3. **Wave Discipline** -- Max 10 agents per wave. Finish the wave before starting the next.
-4. **Evidence or It Did Not Happen** -- Every control evaluation has a recorded evidence trail.
-5. **Severity Order** -- Remediation follows critical > high > medium > low. No skipping.
-6. **Scope Lock** -- Agents operate only on their assigned paths. Violations trigger revert.
-7. **Green Before Ship** -- No release until tests pass and file ownership is validated.
-8. **Dual Persist** -- Results go to both dogfood-labs and repo-knowledge. Both must succeed.
-9. **Manifest Is Truth** -- The manifest.json is the single source of swarm state. Update it at every phase boundary.
-10. **Resumable by Default** -- Every phase writes its outputs to disk so an interrupted swarm can resume.
-11. **Coordinator Never Audits** -- The coordinator dispatches, collects, and validates. It does not author findings.
-12. **Posture Derived, Not Declared** -- Repo posture comes from the audit-standard derivation rules, not coordinator opinion.
 
 ---
 
 ## Resuming an Interrupted Swarm
 
 1. Read `manifest.json` from the swarm directory.
-2. Check `status` to find the last completed phase.
-3. Read all completed outputs from disk:
-   - `components.json` (Phase 2)
-   - `assignments.json` (Phase 3)
-   - `audit-results/*.json` (Phase 4)
-   - `remediation-results/*.json` (Phase 5)
-4. Identify which agents in the current phase completed (have output files) vs. which are missing.
+2. Check `status` to find the current phase.
+3. Read all completed outputs from disk.
+4. Identify which agents in the current phase completed vs. which are missing.
 5. Re-dispatch only the missing work. Do not re-run completed agents.
 6. Continue from the interrupted phase forward.
+
+---
+
+## Proven Results
+
+| Repo | Waves | Start Tests | End Tests | Findings Fixed |
+|------|-------|-------------|-----------|----------------|
+| claude-collaborate | Stage A (2 waves) + Stage B (1 proactive) + Stage C (1 humanization) | 35 | 71 | 106 |
 
 ---
 
 ## Coordinator Checklist (Quick Reference)
 
 ```
- 1. [ ] Generate swarm_id, create swarm directory
- 2. [ ] Write manifest.json with repo, commit, branch
- 3. [ ] Check prior audit state (audit_posture, latest-by-repo.json)
- 4. [ ] Launch Explore agents, merge into components.json (~10 components)
- 5. [ ] Validate every repo file belongs to exactly one component
- 6. [ ] Write assignments.json, verify zero path overlap
- 7. [ ] Launch audit agents (max 10), collect per-component results
- 8. [ ] Merge into audit-summary.json, derive posture
- 9. [ ] Build remediation packets sorted by severity
-10. [ ] Launch remediation agents (max 10), collect fix reports
-11. [ ] Run repo tests/build/lint until green
-12. [ ] Validate no file edited outside its assigned component
-13. [ ] Run persist-results.js
-14. [ ] Call audit_submit MCP tool
-15. [ ] Commit remediation to target repo, push, verify CI
-16. [ ] Mark manifest complete, commit swarm directory to dogfood-labs
+HEALTH PASS — STAGE A (Bug/Security Fix)
+ 1. [ ] Create save point tag
+ 2. [ ] Launch 5 health audit agents (bug/security lens)
+ 3. [ ] Collect findings, sort by severity
+ 4. [ ] Present findings to user for approval
+ 5. [ ] Launch 5 amend agents with exclusive file ownership
+ 6. [ ] Verify build passes (lint + typecheck + tests)
+ 7. [ ] Repeat until 0 CRITICAL + 0 HIGH
+ 8. [ ] Checkpoint with user every 3 iterations
+
+HEALTH PASS — STAGE B (Proactive Health)
+ 9. [ ] Launch 5 audit agents (proactive lens: defensive coding, observability, degradation, future-proofing)
+10. [ ] Present proactive findings to user for approval
+
+HEALTH PASS — STAGE C (Humanization)
+11. [ ] Launch 5 amend agents to fix proactive findings with UX emphasis
+12. [ ] Focus: error messages, reconnection feedback, loading states, state persistence, accessibility
+13. [ ] Verify build passes
+14. [ ] Clean bill of health confirmed — proceed to Feature Pass
+
+FEATURE PASS
+ 9. [ ] Launch 5 feature audit agents
+10. [ ] Present feature findings to user for approval
+11. [ ] Launch 5 execution agents for approved features
+12. [ ] Verify build passes
+13. [ ] Repeat until production-ready
+14. [ ] Checkpoint with user every 3 iterations
+
+FINAL
+15. [ ] Run comprehensive test pass
+16. [ ] Record final metrics in manifest
+17. [ ] Mark manifest complete
 ```
