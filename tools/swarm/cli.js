@@ -26,6 +26,7 @@ import { resume, formatResume } from './commands/resume.js';
 import { buildReceipt, exportReceipt, storeReceipt } from './commands/receipt.js';
 import { verify as runVerify, probeRepo, formatVerify, formatProbe } from './commands/verify.js';
 import { advance as runAdvance, checkGates, getPromotions } from './lib/advance.js';
+import { persist as runPersist, formatPersist } from './commands/persist.js';
 import { openDb } from './db/connection.js';
 import {
   freezeDomains, unfreezeDomains, getDomains, aredomainsFrozen,
@@ -470,6 +471,27 @@ function cmdApprove(args) {
   for (const f of approved) insertEvent.run(f.id);
 }
 
+function cmdPersist(args) {
+  const runId = args[0];
+  if (!runId) {
+    console.error('Usage: swarm persist <run-id> [--ingest] [--dry-run]');
+    process.exit(1);
+  }
+
+  const ingestDogfood = args.includes('--ingest');
+  const dryRun = args.includes('--dry-run');
+
+  const result = runPersist({
+    runId,
+    dbPath: getDbPath(),
+    outputDir: getOutputDir(runId),
+    ingestDogfood,
+    dryRun,
+  });
+
+  console.log(formatPersist(result));
+}
+
 function cmdRuns() {
   const db = openDb(getDbPath());
   const runs = db.prepare('SELECT * FROM runs ORDER BY created_at DESC').all();
@@ -506,6 +528,7 @@ const commands = {
   status: cmdStatus,
   resume: cmdResume,
   approve: cmdApprove,
+  persist: cmdPersist,
   runs: cmdRuns,
 };
 
@@ -520,6 +543,7 @@ Commands:
   verify <run-id> [opts]     Run build verification (auto-detect or --adapter)
   receipt <run-id> [wave]    Export durable wave receipt (JSON + markdown)
   advance <run-id> [opts]    Check gates and advance to next phase
+  persist <run-id> [opts]    Export canonical truth to downstream systems
   status <run-id>            Control plane status
   resume <run-id>            Redispatch incomplete agents
   approve <run-id> [opts]    Approve findings for amend
