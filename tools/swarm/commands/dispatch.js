@@ -18,6 +18,7 @@ import { openDb } from '../db/connection.js';
 import { getDomains, aredomainsFrozen, freezeDomains, takeDomainSnapshot } from '../lib/domains.js';
 import { buildAuditPrompt, buildAmendPrompt, buildFeatureAuditPrompt } from '../lib/templates.js';
 import { buildPriorMap } from '../lib/fingerprint.js';
+import { createWorktree } from '../lib/worktree.js';
 
 const AUDIT_PHASES = ['health-audit-a', 'health-audit-b', 'health-audit-c', 'feature-audit'];
 const AMEND_PHASES = ['health-amend-a', 'health-amend-b', 'health-amend-c', 'feature-execute'];
@@ -29,6 +30,7 @@ const AMEND_PHASES = ['health-amend-a', 'health-amend-b', 'health-amend-c', 'fea
  * @param {string} opts.dbPath
  * @param {string} opts.outputDir — where to write prompt files
  * @param {boolean} [opts.autoFreeze] — freeze domains if still draft
+ * @param {boolean} [opts.isolate] — create per-agent worktrees
  * @returns {object} — { waveId, waveNumber, agents, promptDir }
  */
 export function dispatch(opts) {
@@ -92,14 +94,34 @@ export function dispatch(opts) {
     // Only dispatch owned + bridge domains as agents (shared is a zone, not an agent)
     if (domain.ownership_class === 'shared') continue;
 
+    // Create worktree if isolation is enabled
+    let worktreePath = null;
+    let worktreeBranch = null;
+    if (opts.isolate) {
+      try {
+        const wt = createWorktree(run.local_path, {
+          runId: opts.runId,
+          waveNumber,
+          domainName: domain.name,
+        });
+        worktreePath = wt.worktreePath;
+        worktreeBranch = wt.branch;
+      } catch (e) {
+        // Worktree creation failed — continue without isolation
+        worktreePath = null;
+        worktreeBranch = null;
+      }
+    }
+
     const agentResult = db.prepare(`
-      INSERT INTO agent_runs (wave_id, domain_id, status)
-      VALUES (?, ?, 'dispatched')
-    `).run(waveId, domain.id);
+      INSERT INTO agent_runs (wave_id, domain_id, status, worktree_path, worktree_branch)
+      VALUES (?, ?, 'dispatched', ?, ?)
+    `).run(waveId, domain.id, worktreePath, worktreeBranch);
 
     let prompt;
+    const agentWorkDir = worktreePath || run.local_path;
     const promptOpts = {
-      repoPath: run.local_path,
+      repoPath: agentWorkDir,
       repo: run.repo,
       domainName: domain.name,
       globs: domain.globs,
@@ -144,6 +166,8 @@ export function dispatch(opts) {
       domain: domain.name,
       domainId: domain.id,
       promptPath,
+      worktreePath,
+      worktreeBranch,
     });
   }
 

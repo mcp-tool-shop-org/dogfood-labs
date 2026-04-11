@@ -8,7 +8,7 @@
 import Database from 'better-sqlite3';
 import { existsSync, mkdirSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { SCHEMA_SQL, SCHEMA_VERSION, MIGRATION_2_SQL } from './schema.js';
+import { SCHEMA_SQL, SCHEMA_VERSION, MIGRATIONS_SQL } from './schema.js';
 
 /** @type {Map<string, Database.Database>} */
 const pool = new Map();
@@ -77,7 +77,7 @@ export function openMemoryDb() {
  * Apply ALTER TABLE migrations. Catches "duplicate column" errors.
  */
 function applyMigrations(db) {
-  for (const sql of MIGRATION_2_SQL) {
+  for (const sql of MIGRATIONS_SQL) {
     try { db.exec(sql); } catch (e) {
       if (!e.message.includes('duplicate column')) throw e;
     }

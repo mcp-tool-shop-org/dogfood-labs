@@ -23,9 +23,9 @@ import {
 // Schema v2
 // ═══════════════════════════════════════════
 
-describe('Schema v2', () => {
-  it('is at version 2', () => {
-    assert.equal(SCHEMA_VERSION, 2);
+describe('Schema v2+', () => {
+  it('is at version 3 or higher', () => {
+    assert.ok(SCHEMA_VERSION >= 3);
   });
 
   it('creates v2 tables (agent_state_events, domain_events, wave_receipts)', () => {

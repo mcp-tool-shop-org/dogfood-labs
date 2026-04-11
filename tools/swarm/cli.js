@@ -25,6 +25,7 @@ import { status, formatStatus } from './commands/status.js';
 import { resume, formatResume } from './commands/resume.js';
 import { buildReceipt, exportReceipt, storeReceipt } from './commands/receipt.js';
 import { verify as runVerify, probeRepo, formatVerify, formatProbe } from './commands/verify.js';
+import { advance as runAdvance, checkGates, getPromotions } from './lib/advance.js';
 import { openDb } from './db/connection.js';
 import {
   freezeDomains, unfreezeDomains, getDomains, aredomainsFrozen,
@@ -202,6 +203,7 @@ function cmdDispatch(args) {
   }
 
   const autoFreeze = args.includes('--auto-freeze');
+  const isolate = args.includes('--isolate');
 
   const result = dispatch({
     runId,
@@ -209,12 +211,14 @@ function cmdDispatch(args) {
     dbPath: getDbPath(),
     outputDir: getOutputDir(runId),
     autoFreeze,
+    isolate,
   });
 
   console.log(`\nWave ${result.waveNumber} dispatched (${result.phase})`);
   console.log(`Prompts written to: ${result.promptDir}\n`);
   for (const a of result.agents) {
-    console.log(`  ${a.domain} → ${a.promptPath}`);
+    const wt = a.worktreePath ? ` [worktree: ${a.worktreePath}]` : '';
+    console.log(`  ${a.domain} → ${a.promptPath}${wt}`);
   }
   console.log(`\nDispatch ${result.agents.length} agents with these prompts.`);
   console.log(`When done, run: swarm collect ${runId}`);
@@ -351,6 +355,82 @@ function cmdReceipt(args) {
   console.log(`Recommendation: ${receipt.recommendation.action}${receipt.recommendation.reason ? ' — ' + receipt.recommendation.reason : ''}`);
 }
 
+function cmdAdvance(args) {
+  const runId = args[0];
+  if (!runId) {
+    console.error('Usage: swarm advance <run-id> [--override --reason "..."] [--check-only]');
+    process.exit(1);
+  }
+
+  const db = openDb(getDbPath());
+
+  // --check-only: just show gate results
+  if (args.includes('--check-only')) {
+    const result = checkGates(db, runId);
+    console.log(`Verdict: ${result.verdict}`);
+    if (result.nextPhase) console.log(`Next phase: ${result.nextPhase}`);
+    if (result.reason) console.log(`Reason: ${result.reason}`);
+    console.log('');
+    console.log('Gates:');
+    for (const g of result.gates) {
+      console.log(`  [${g.passed ? 'PASS' : 'FAIL'}] ${g.name} — ${g.reason}`);
+    }
+    if (result.overridable) console.log('\nThis block is overridable with --override --reason "..."');
+    return;
+  }
+
+  // --history: show promotion history
+  if (args.includes('--history')) {
+    const promotions = getPromotions(db, runId);
+    if (promotions.length === 0) {
+      console.log('No promotions yet.');
+      return;
+    }
+    console.log('Promotion history:');
+    for (const p of promotions) {
+      const gates = p.gates_checked.filter(g => g.passed).length;
+      const total = p.gates_checked.length;
+      const override = p.overrides ? ` [OVERRIDE: ${p.overrides.map(o => o.reason).join('; ')}]` : '';
+      console.log(`  ${p.created_at} | ${p.from_phase} → ${p.to_phase} | ${gates}/${total} gates | ${p.authorized_by}${override}`);
+    }
+    return;
+  }
+
+  const override = args.includes('--override');
+  const reasonIdx = args.indexOf('--reason');
+  const overrideReason = reasonIdx >= 0 ? args[reasonIdx + 1] : undefined;
+
+  if (override && !overrideReason) {
+    console.error('--override requires --reason "explanation"');
+    process.exit(1);
+  }
+
+  const result = runAdvance(db, runId, {
+    override,
+    overrideReason,
+    authorizedBy: 'coordinator',
+  });
+
+  if (result.promoted) {
+    console.log(`PROMOTED: ${result.fromPhase} → ${result.toPhase}`);
+    console.log(`Verdict: ${result.verdict}`);
+    console.log(`Promotion ID: ${result.promotionId}`);
+    console.log('');
+    console.log(`Next: swarm dispatch ${runId} ${result.toPhase}`);
+  } else {
+    console.log(`BLOCKED: ${result.verdict}`);
+    if (result.reason) console.log(`Reason: ${result.reason}`);
+    console.log('');
+    console.log('Gates:');
+    for (const g of (result.gates || [])) {
+      console.log(`  [${g.passed ? 'PASS' : 'FAIL'}] ${g.name} — ${g.reason}`);
+    }
+    if (result.verdict === 'AMEND') {
+      console.log(`\nNext: swarm approve ${args[0]} --all && swarm dispatch ${args[0]} ${result.nextPhase}`);
+    }
+  }
+}
+
 function cmdApprove(args) {
   const runId = args[0];
   if (!runId) {
@@ -422,6 +502,7 @@ const commands = {
   collect: cmdCollect,
   verify: cmdVerify,
   receipt: cmdReceipt,
+  advance: cmdAdvance,
   status: cmdStatus,
   resume: cmdResume,
   approve: cmdApprove,
@@ -438,6 +519,7 @@ Commands:
   collect <run-id> [opts]    Validate, enforce ownership, merge
   verify <run-id> [opts]     Run build verification (auto-detect or --adapter)
   receipt <run-id> [wave]    Export durable wave receipt (JSON + markdown)
+  advance <run-id> [opts]    Check gates and advance to next phase
   status <run-id>            Control plane status
   resume <run-id>            Redispatch incomplete agents
   approve <run-id> [opts]    Approve findings for amend

@@ -5,7 +5,7 @@
  * artifacts, findings, finding_events, verification_receipts, kv.
  */
 
-export const SCHEMA_VERSION = 2;
+export const SCHEMA_VERSION = 3;
 
 export const SCHEMA_SQL = `
 -- ───────────────────────────────────────────
@@ -57,14 +57,16 @@ CREATE TABLE IF NOT EXISTS domains (
 -- Per-wave, per-domain agent execution state
 -- ───────────────────────────────────────────
 CREATE TABLE IF NOT EXISTS agent_runs (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  wave_id       INTEGER NOT NULL REFERENCES waves(id),
-  domain_id     INTEGER NOT NULL REFERENCES domains(id),
-  status        TEXT    NOT NULL DEFAULT 'pending',
-  output_path   TEXT,
-  started_at    TEXT,
-  completed_at  TEXT,
-  error_message TEXT
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  wave_id         INTEGER NOT NULL REFERENCES waves(id),
+  domain_id       INTEGER NOT NULL REFERENCES domains(id),
+  status          TEXT    NOT NULL DEFAULT 'pending',
+  output_path     TEXT,
+  worktree_path   TEXT,
+  worktree_branch TEXT,
+  started_at      TEXT,
+  completed_at    TEXT,
+  error_message   TEXT
 );
 
 -- ───────────────────────────────────────────
@@ -203,6 +205,25 @@ CREATE TABLE IF NOT EXISTS wave_receipts (
 
 CREATE INDEX IF NOT EXISTS idx_agent_state_ev ON agent_state_events(agent_run_id);
 CREATE INDEX IF NOT EXISTS idx_domain_ev      ON domain_events(domain_id);
+
+-- ───────────────────────────────────────────
+-- v3: Wave promotion records (append-only)
+-- ───────────────────────────────────────────
+CREATE TABLE IF NOT EXISTS promotions (
+  id               INTEGER PRIMARY KEY AUTOINCREMENT,
+  wave_id          INTEGER NOT NULL REFERENCES waves(id),
+  run_id           TEXT    NOT NULL REFERENCES runs(id),
+  from_phase       TEXT    NOT NULL,
+  to_phase         TEXT    NOT NULL,
+  authorized_by    TEXT    NOT NULL DEFAULT 'coordinator',
+  gates_checked    TEXT    NOT NULL,
+  overrides        TEXT,
+  finding_snapshot TEXT,
+  created_at       TEXT    NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS idx_promotions_run  ON promotions(run_id);
+CREATE INDEX IF NOT EXISTS idx_promotions_wave ON promotions(wave_id);
 `;
 
 /**
@@ -210,13 +231,16 @@ CREATE INDEX IF NOT EXISTS idx_domain_ev      ON domain_events(domain_id);
  * These are idempotent (SQLite ALTER TABLE ADD COLUMN is no-op if column exists... sort of).
  * We catch errors for columns that already exist.
  */
-export const MIGRATION_2_SQL = [
-  // runs: timeout policy per run (ms)
+export const MIGRATIONS_SQL = [
+  // v2: runs: timeout policy per run (ms)
   "ALTER TABLE runs ADD COLUMN timeout_policy_ms INTEGER NOT NULL DEFAULT 1800000",
-  // waves: domain snapshot ID for wave-bound ownership checks
+  // v2: waves: domain snapshot ID for wave-bound ownership checks
   "ALTER TABLE waves ADD COLUMN domain_snapshot_id TEXT",
-  // domains: human-readable description
+  // v2: domains: human-readable description
   "ALTER TABLE domains ADD COLUMN description TEXT DEFAULT ''",
+  // v3: agent_runs: worktree isolation paths
+  "ALTER TABLE agent_runs ADD COLUMN worktree_path TEXT",
+  "ALTER TABLE agent_runs ADD COLUMN worktree_branch TEXT",
 ];
 
 /**
