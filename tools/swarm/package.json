@@ -3,7 +3,14 @@
   "version": "1.0.0",
   "private": true,
   "type": "module",
+  "bin": {
+    "swarm": "./cli.js"
+  },
   "scripts": {
-    "test": "node --test swarm.test.js"
+    "test": "node --test control-plane.test.js hardening.test.js swarm.test.js"
+  },
+  "dependencies": {
+    "better-sqlite3": "^11.0.0",
+    "minimatch": "^10.0.0"
   }
 }
