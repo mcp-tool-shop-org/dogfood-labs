@@ -7,7 +7,7 @@
     "swarm": "./cli.js"
   },
   "scripts": {
-    "test": "node --test control-plane.test.js hardening.test.js swarm.test.js"
+    "test": "node --test control-plane.test.js hardening.test.js verify.test.js swarm.test.js"
   },
   "dependencies": {
     "better-sqlite3": "^11.0.0",

@@ -24,6 +24,7 @@ import { collect } from './commands/collect.js';
 import { status, formatStatus } from './commands/status.js';
 import { resume, formatResume } from './commands/resume.js';
 import { buildReceipt, exportReceipt, storeReceipt } from './commands/receipt.js';
+import { verify as runVerify, probeRepo, formatVerify, formatProbe } from './commands/verify.js';
 import { openDb } from './db/connection.js';
 import {
   freezeDomains, unfreezeDomains, getDomains, aredomainsFrozen,
@@ -295,6 +296,32 @@ function cmdResume(args) {
   console.log(formatResume(r));
 }
 
+function cmdVerify(args) {
+  const runId = args[0];
+  if (!runId) {
+    console.error('Usage: swarm verify <run-id> [--adapter node|python|rust] [--probe-only]');
+    process.exit(1);
+  }
+
+  // --probe-only: just show probe results
+  if (args.includes('--probe-only')) {
+    const probes = probeRepo({ runId, dbPath: getDbPath() });
+    console.log(formatProbe(probes));
+    return;
+  }
+
+  const adapterIdx = args.indexOf('--adapter');
+  const override = adapterIdx >= 0 ? args[adapterIdx + 1] : undefined;
+
+  const result = runVerify({
+    runId,
+    dbPath: getDbPath(),
+    override,
+  });
+
+  console.log(formatVerify(result));
+}
+
 function cmdReceipt(args) {
   const runId = args[0];
   if (!runId) {
@@ -393,6 +420,7 @@ const commands = {
   domains: cmdDomains,
   dispatch: cmdDispatch,
   collect: cmdCollect,
+  verify: cmdVerify,
   receipt: cmdReceipt,
   status: cmdStatus,
   resume: cmdResume,
@@ -408,6 +436,7 @@ Commands:
   domains <run-id> [opts]    Show, edit, freeze, unfreeze domain map
   dispatch <run-id> <phase>  Create wave + agent prompts
   collect <run-id> [opts]    Validate, enforce ownership, merge
+  verify <run-id> [opts]     Run build verification (auto-detect or --adapter)
   receipt <run-id> [wave]    Export durable wave receipt (JSON + markdown)
   status <run-id>            Control plane status
   resume <run-id>            Redispatch incomplete agents
