@@ -93,10 +93,14 @@ export function buildReceipt(opts) {
   // Findings summary
   const allFindings = db.prepare('SELECT * FROM findings WHERE run_id = ?').all(opts.runId);
   const findingsBySeverity = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
+  const openBySeverity = { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 };
   const findingsByStatus = {};
   for (const f of allFindings) {
     findingsBySeverity[f.severity] = (findingsBySeverity[f.severity] || 0) + 1;
     findingsByStatus[f.status] = (findingsByStatus[f.status] || 0) + 1;
+    if (f.status !== 'fixed' && f.status !== 'rejected') {
+      openBySeverity[f.severity] = (openBySeverity[f.severity] || 0) + 1;
+    }
   }
 
   // Wave-specific finding counts
@@ -104,11 +108,25 @@ export function buildReceipt(opts) {
   const waveRecurring = allFindings.filter(f => f.last_seen_wave === wave.id && f.status === 'recurring').length;
   const waveFixed = allFindings.filter(f => f.last_seen_wave === wave.id && f.status === 'fixed').length;
 
+  // Wave-delta severity: severity of findings first seen in THIS wave
+  const waveNewCrit = allFindings.filter(
+    f => f.first_seen_wave === wave.id && f.status === 'new' && f.severity === 'CRITICAL'
+  ).length;
+  const waveNewHigh = allFindings.filter(
+    f => f.first_seen_wave === wave.id && f.status === 'new' && f.severity === 'HIGH'
+  ).length;
+  const totalFixed = (findingsByStatus.fixed || 0);
+
   // Verification receipt for this wave
   const verification = db.prepare('SELECT * FROM verification_receipts WHERE wave_id = ?').get(wave.id);
 
-  // Compute advance recommendation
-  const recommendation = computeRecommendation(wave, agentRuns, findingsBySeverity, findingsByStatus);
+  // Compute advance recommendation from OPEN findings (not historical aggregate)
+  const recommendation = computeRecommendation(wave, agentRuns, openBySeverity, {
+    waveNew,
+    waveNewCrit,
+    waveNewHigh,
+    totalFixed,
+  });
 
   return {
     receipt_version: '1.0.0',
@@ -280,7 +298,7 @@ function formatReceiptMarkdown(r) {
   return lines.join('\n');
 }
 
-function computeRecommendation(wave, agentRuns, bySeverity, byStatus) {
+function computeRecommendation(wave, agentRuns, openBySeverity, waveDelta) {
   const allComplete = agentRuns.every(a => a.status === 'complete');
   const hasBlocked = agentRuns.some(a => ['invalid_output', 'ownership_violation'].includes(a.status));
   const hasInFlight = agentRuns.some(a => ['dispatched', 'running'].includes(a.status));
@@ -295,11 +313,16 @@ function computeRecommendation(wave, agentRuns, bySeverity, byStatus) {
     return { action: 'RESUME', reason: 'Some agents not complete — run `swarm resume`' };
   }
 
-  // All complete — check if we can advance
-  if (wave.phase.startsWith('health-audit-a') && (bySeverity.CRITICAL > 0 || bySeverity.HIGH > 0)) {
-    const openCrit = (byStatus.new || 0) + (byStatus.recurring || 0);
-    return { action: 'AMEND', reason: `${bySeverity.CRITICAL} CRITICAL + ${bySeverity.HIGH} HIGH findings — approve and amend` };
+  const wavePart = `Wave: ${waveDelta.waveNew} new (${waveDelta.waveNewCrit} CRIT + ${waveDelta.waveNewHigh} HIGH)`;
+  const runPart = `Run total: ${openBySeverity.CRITICAL} CRIT + ${openBySeverity.HIGH} HIGH open (fixed: ${waveDelta.totalFixed})`;
+
+  // All complete — check OPEN severity (fixed/rejected findings are not blockers)
+  if (wave.phase.startsWith('health-audit-a') && (openBySeverity.CRITICAL > 0 || openBySeverity.HIGH > 0)) {
+    return {
+      action: 'AMEND',
+      reason: `${wavePart} | ${runPart} — approve and amend`,
+    };
   }
 
-  return { action: 'ADVANCE', reason: 'Wave complete, all agents clean — ready to advance' };
+  return { action: 'ADVANCE', reason: `${wavePart} | ${runPart} — all agents clean, ready to advance` };
 }

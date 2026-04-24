@@ -9,7 +9,8 @@ const SEVERITY_ENUM = ['CRITICAL', 'HIGH', 'MEDIUM', 'LOW'];
 
 const AUDIT_CATEGORIES = [
   'bug', 'security', 'quality', 'types', 'tests', 'docs',
-  'defensive', 'observability', 'degradation', 'ux', 'accessibility',
+  'defensive', 'observability', 'degradation', 'future-proofing',
+  'ux', 'accessibility',
 ];
 
 const FEATURE_CATEGORIES = [
