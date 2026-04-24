@@ -428,7 +428,7 @@ describe('Domain snapshots', () => {
 // Receipts
 // ═══════════════════════════════════════════
 
-import { buildReceipt } from './commands/receipt.js';
+import { buildReceipt, computeRecommendation } from './commands/receipt.js';
 
 describe('Wave receipt', () => {
   let db, dbPath;
@@ -472,6 +472,57 @@ describe('Wave receipt', () => {
     const wave = db.prepare('SELECT * FROM waves WHERE run_id = ?').get('r1');
     assert.equal(wave.domain_snapshot_id, 'snap-abc');
     db.close();
+  });
+});
+
+describe('Receipt recommendation footer', () => {
+  const completeAgents = [{ status: 'complete' }, { status: 'complete' }];
+  const auditWave = { phase: 'health-audit-a' };
+  const postAuditWave = { phase: 'health-audit-b' };
+
+  it('surfaces wave-delta AND run-total in ADVANCE reason when open counts are zero', () => {
+    const open = { CRITICAL: 0, HIGH: 0, MEDIUM: 2, LOW: 5 };
+    const waveDelta = { waveNew: 3, waveNewCrit: 0, waveNewHigh: 0, totalFixed: 37 };
+    const rec = computeRecommendation(auditWave, completeAgents, open, waveDelta);
+    assert.equal(rec.action, 'ADVANCE');
+    assert.match(rec.reason, /Wave: 3 new \(0 CRIT \+ 0 HIGH\)/);
+    assert.match(rec.reason, /Run total: 0 CRIT \+ 0 HIGH open \(fixed: 37\)/);
+  });
+
+  it('does NOT recommend AMEND when CRIT/HIGH are all fixed (aggregate-drift regression)', () => {
+    // The codecomfy drift: 2 CRIT + 13 HIGH existed historically but are all fixed.
+    // Wave 5 returned 3 new MEDIUMs. Old code said AMEND; new code must say ADVANCE.
+    const open = { CRITICAL: 0, HIGH: 0, MEDIUM: 3, LOW: 0 };
+    const waveDelta = { waveNew: 3, waveNewCrit: 0, waveNewHigh: 0, totalFixed: 15 };
+    const rec = computeRecommendation(auditWave, completeAgents, open, waveDelta);
+    assert.equal(rec.action, 'ADVANCE');
+    assert.doesNotMatch(rec.reason, /AMEND/);
+  });
+
+  it('recommends AMEND with wave-delta + run-total when open CRIT/HIGH remain in Stage A', () => {
+    const open = { CRITICAL: 1, HIGH: 4, MEDIUM: 2, LOW: 0 };
+    const waveDelta = { waveNew: 5, waveNewCrit: 1, waveNewHigh: 4, totalFixed: 10 };
+    const rec = computeRecommendation(auditWave, completeAgents, open, waveDelta);
+    assert.equal(rec.action, 'AMEND');
+    assert.match(rec.reason, /Wave: 5 new \(1 CRIT \+ 4 HIGH\)/);
+    assert.match(rec.reason, /Run total: 1 CRIT \+ 4 HIGH open \(fixed: 10\)/);
+  });
+
+  it('ADVANCE in post-Stage-A phases even when open CRIT/HIGH exist (gate is audit-a only)', () => {
+    const open = { CRITICAL: 2, HIGH: 3, MEDIUM: 0, LOW: 0 };
+    const waveDelta = { waveNew: 0, waveNewCrit: 0, waveNewHigh: 0, totalFixed: 0 };
+    const rec = computeRecommendation(postAuditWave, completeAgents, open, waveDelta);
+    assert.equal(rec.action, 'ADVANCE');
+  });
+
+  it('WAIT reason short-circuits before wave-delta formatting (no waveDelta deref)', () => {
+    const rec = computeRecommendation(
+      auditWave,
+      [{ status: 'running' }, { status: 'complete' }],
+      { CRITICAL: 0, HIGH: 0, MEDIUM: 0, LOW: 0 },
+      { waveNew: 0, waveNewCrit: 0, waveNewHigh: 0, totalFixed: 0 },
+    );
+    assert.equal(rec.action, 'WAIT');
   });
 });
 

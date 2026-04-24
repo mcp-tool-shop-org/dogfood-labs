@@ -298,7 +298,7 @@ function formatReceiptMarkdown(r) {
   return lines.join('\n');
 }
 
-function computeRecommendation(wave, agentRuns, openBySeverity, waveDelta) {
+export function computeRecommendation(wave, agentRuns, openBySeverity, waveDelta) {
   const allComplete = agentRuns.every(a => a.status === 'complete');
   const hasBlocked = agentRuns.some(a => ['invalid_output', 'ownership_violation'].includes(a.status));
   const hasInFlight = agentRuns.some(a => ['dispatched', 'running'].includes(a.status));

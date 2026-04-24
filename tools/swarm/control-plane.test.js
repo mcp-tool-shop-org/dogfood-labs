@@ -342,6 +342,17 @@ describe('Audit output validation', () => {
     });
     assert.equal(result.valid, false);
   });
+
+  it('accepts future-proofing category (Stage B lens from PROTOCOL.md)', () => {
+    const result = validateAuditOutput({
+      domain: 'backend', stage: 'B', summary: 'ok',
+      findings: [{
+        id: 'F-1', severity: 'MEDIUM', category: 'future-proofing',
+        description: 'hardcoded version in 11 places — needs registry', file: 'src/x.js', line: 5,
+      }],
+    });
+    assert.equal(result.valid, true, `expected valid; got errors: ${result.errors.join('; ')}`);
+  });
 });
 
 describe('Feature output validation', () => {
