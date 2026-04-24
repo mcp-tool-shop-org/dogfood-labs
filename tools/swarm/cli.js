@@ -11,6 +11,7 @@
  *   swarm status <run-id>            — Control plane status
  *   swarm resume <run-id>            — Redispatch incomplete agents
  *   swarm approve <run-id> [ids]     — Approve findings for amend
+ *   swarm findings <run-id> [wave]   — Findings digest for a wave (default: latest)
  *   swarm runs                       — List all runs
  */
 
@@ -33,6 +34,7 @@ import {
   editDomain, addDomain, removeDomain, getDomainEvents,
 } from './lib/domains.js';
 import { setTimeoutPolicy, getTimeoutPolicy } from './lib/state-machine.js';
+import { buildDigest } from './lib/findings-digest.js';
 
 // ── Resolve DB path ──
 // Default: F:\AI\dogfood-labs\swarms\control-plane.db
@@ -492,6 +494,20 @@ function cmdPersist(args) {
   console.log(formatPersist(result));
 }
 
+function cmdFindings(args) {
+  const runId = args[0];
+  if (!runId) {
+    console.error('Usage: swarm findings <run-id> [wave-number]');
+    process.exit(1);
+  }
+  const waveArg = args[1];
+  const { output } = buildDigest({
+    runId,
+    waveNumber: waveArg ? parseInt(waveArg, 10) : undefined,
+  });
+  console.log(output);
+}
+
 function cmdRuns() {
   const db = openDb(getDbPath());
   const runs = db.prepare('SELECT * FROM runs ORDER BY created_at DESC').all();
@@ -529,6 +545,7 @@ const commands = {
   resume: cmdResume,
   approve: cmdApprove,
   persist: cmdPersist,
+  findings: cmdFindings,
   runs: cmdRuns,
 };
 
@@ -547,6 +564,7 @@ Commands:
   status <run-id>            Control plane status
   resume <run-id>            Redispatch incomplete agents
   approve <run-id> [opts]    Approve findings for amend
+  findings <run-id> [wave]   Findings digest for a wave (default: latest)
   runs                       List all runs
 
 Domain commands:
