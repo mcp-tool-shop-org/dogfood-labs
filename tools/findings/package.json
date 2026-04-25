@@ -1,0 +1,16 @@
+{
+  "name": "@dogfood-labs/findings",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Finding contract spine for dogfood-labs. Validates, reads, lists, and queries evidence-bound findings — the fourth contract alongside record, scenario, and policy.",
+  "main": "index.js",
+  "scripts": {
+    "test": "node --test findings.test.js derive/derive.test.js review/review.test.js synthesis/synthesis.test.js advise/advise.test.js"
+  },
+  "dependencies": {
+    "ajv": "^8.18.0",
+    "ajv-formats": "^3.0.1",
+    "js-yaml": "^4.1.0"
+  }
+}

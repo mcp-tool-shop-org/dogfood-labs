@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-03-28T06:30:43.657Z",
+  "generatedAt": "2026-03-29T22:46:27.840Z",
   "coverage": {
     "total_repos": 13,
     "surfaces_covered": 8,
@@ -11,7 +11,7 @@
       "surface": "web",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 1,
+      "freshness_days": 3,
       "scenario": "build-and-verify-site",
       "run_id": "a11y-demo-site-23619117024-1",
       "finished_at": "2026-03-26T21:33:46Z"
@@ -21,7 +21,7 @@
       "surface": "cli",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 4,
       "scenario": "resolve-real-loadout",
       "run_id": "ai-loadout-23566269375-1",
       "finished_at": "2026-03-25T21:59:20Z"
@@ -31,7 +31,7 @@
       "surface": "mcp-server",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 4,
       "scenario": "status-preflight-roundtrip",
       "run_id": "claude-guardian-23567284476-1",
       "finished_at": "2026-03-25T22:26:10Z"
@@ -41,7 +41,7 @@
       "surface": "cli",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "init-and-run-pipeline",
       "run_id": "code-batch-23568477306-1",
       "finished_at": "2026-03-25T23:00:15Z"
@@ -51,7 +51,7 @@
       "surface": "desktop",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 8,
+      "freshness_days": 9,
       "scenario": "export-roundtrip-16x16",
       "run_id": "glyphstudio-23325766223-1",
       "finished_at": "2026-03-20T01:54:44Z"
@@ -61,7 +61,7 @@
       "surface": "plugin",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 1,
+      "freshness_days": 3,
       "scenario": "build-and-test-extension",
       "run_id": "polyglot-vscode-23619483245-1",
       "finished_at": "2026-03-26T21:43:09Z"
@@ -71,7 +71,7 @@
       "surface": "mcp-server",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "crawl-real-repo",
       "run_id": "repo-crawler-mcp-23571073097-1",
       "finished_at": "2026-03-26T00:22:41Z"
@@ -81,7 +81,7 @@
       "surface": "cli",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "self-gate-real-repo",
       "run_id": "shipcheck-23571363808-1",
       "finished_at": "2026-03-26T00:32:46Z"
@@ -93,15 +93,15 @@
       "enforcement": "required",
       "freshness_days": 2,
       "scenario": "scaffold-and-verify",
-      "run_id": "site-theme-23571414763-1",
-      "finished_at": "2026-03-26T00:34:21Z"
+      "run_id": "site-theme-23630385933-1",
+      "finished_at": "2026-03-27T03:56:32Z"
     },
     {
       "repo": "mcp-tool-shop-org/tool-scan",
       "surface": "cli",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "scan-real-mcp-definition",
       "run_id": "tool-scan-23571932376-1",
       "finished_at": "2026-03-26T00:52:34Z"
@@ -111,7 +111,7 @@
       "surface": "api",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "health-and-presets-roundtrip",
       "run_id": "vocal-synth-engine-23572047723-1",
       "finished_at": "2026-03-26T00:56:40Z"
@@ -121,7 +121,7 @@
       "surface": "library",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "import-and-compile",
       "run_id": "voice-soundboard-23572161533-1",
       "finished_at": "2026-03-26T01:00:42Z"
@@ -131,7 +131,7 @@
       "surface": "cli",
       "verified": "pass",
       "enforcement": "required",
-      "freshness_days": 2,
+      "freshness_days": 3,
       "scenario": "profile-real-repo",
       "run_id": "zip-meta-map-23572590802-1",
       "finished_at": "2026-03-26T01:16:09Z"
