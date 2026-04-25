@@ -13,6 +13,8 @@ dogfood-labs is the sole write authority for dogfood evidence. Other systems con
 |--------|-------------|--------------|
 | **shipcheck** | GitHub raw URL (CDN) | Gate F enforcement — blocks or warns based on dogfood status |
 | **repo-knowledge** | `rk sync-dogfood` (local or URL) | Mirrors facts into SQLite for portfolio queries |
+| **repo-knowledge** | `sync-export --json` | Ingests accepted findings, patterns, recommendations, doctrine |
+| **role-os** | Advice bundles | Consumes inherited guidance for bootstrap/review contexts |
 | **org audit** | Portfolio JSON | Includes dogfood status in audit posture |
 
 ## shipcheck Gate F
@@ -60,6 +62,34 @@ node tools/portfolio/generate.js
 
 Output includes coverage counts, per-repo entries with freshness, stale repos, and repos with policies but no index entry.
 
+## Intelligence Layer Consumption
+
+The [intelligence layer](../intelligence-layer/) adds a second consumption path beyond raw dogfood status.
+
+### Advice Bundles
+
+Future projects query for inherited guidance:
+
+```bash
+node tools/findings/cli.js advise --surface mcp-server
+```
+
+Returns starter checks, evidence expectations, likely failure classes, relevant doctrine, and supporting lineage.
+
+### Sync Export
+
+All accepted learning artifacts can be exported as structured JSON for repo-knowledge:
+
+```bash
+node tools/findings/cli.js sync-export --json
+```
+
+The export includes accepted findings, patterns, recommendations, and doctrine with full provenance IDs preserved.
+
+### role-os Consumption
+
+role-os can pull advice bundles into bootstrap and review contexts. role-os is a downstream consumer only --- it does not write back to dogfood-labs or own any learning artifacts.
+
 ## Key Invariant
 
-**dogfood-labs writes truth, consumers mirror truth.** No consumer should edit, reinterpret, or "fix" dogfood data. If the data is wrong, fix it in dogfood-labs.
+**dogfood-labs writes truth, consumers mirror truth.** No consumer should edit, reinterpret, or "fix" dogfood data. If the data is wrong, fix it in dogfood-labs. This applies to both raw dogfood status and intelligence layer artifacts.

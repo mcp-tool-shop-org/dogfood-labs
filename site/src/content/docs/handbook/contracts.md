@@ -1,11 +1,11 @@
 ---
 title: Contracts
-description: The three contracts that define dogfood-labs
+description: The seven contracts that define dogfood-labs
 sidebar:
   order: 2
 ---
 
-dogfood-labs is defined by three contracts. Each has a JSON Schema and documentation.
+dogfood-labs is defined by seven contracts. The original three (record, scenario, policy) govern evidence capture. Four newer contracts (finding, pattern, recommendation, doctrine) power the [intelligence layer](../intelligence-layer/).
 
 ## Record Contract
 
@@ -71,3 +71,31 @@ Key fields:
 - `surfaces.<surface>.evidence_requirements` -- `required_kinds`, `min_evidence_count`
 
 Global policy at `policies/global-policy.yaml` sets org-wide defaults including stale thresholds (critical: 60d, warning: 30d, healthy: 14d) and 8 global validation rules that apply to every submission.
+
+## Intelligence Layer Contracts
+
+The following four contracts power the learning loop. See [Intelligence Layer](../intelligence-layer/) for full details.
+
+### Finding Contract
+
+An evidence-bound lesson extracted from dogfood runs (`dogfood-finding.schema.json`).
+
+Key fields: `finding_id`, `status` (candidate/reviewed/accepted/rejected), `issue_kind`, `root_cause_kind`, `remediation_kind`, `transfer_scope`, `source_record_ids`, `evidence[]`, optional `review`, `lineage`, `invalidation`, `derived` metadata.
+
+### Pattern Contract
+
+A repeated lesson cluster backed by 2+ accepted findings (`dogfood-pattern.schema.json`).
+
+Key fields: `pattern_id`, `pattern_kind`, `pattern_strength`, `source_finding_ids` (min 2), `support` (finding/repo/surface counts), `dimensions` (shared issue/root-cause/surface).
+
+### Recommendation Contract
+
+Actionable guidance derived from accepted patterns (`dogfood-recommendation.schema.json`).
+
+Key fields: `recommendation_id`, `recommendation_kind`, `applies_to` (surfaces/modes), `based_on_pattern_ids`, `action` (type/target/details), `confidence`.
+
+### Doctrine Contract
+
+Hardened portfolio rules earned from strong patterns (`dogfood-doctrine.schema.json`).
+
+Key fields: `doctrine_id`, `doctrine_kind`, `statement`, `rationale`, `based_on_pattern_ids`, `transfer_scope` (surface_archetype or broader), `strength`.

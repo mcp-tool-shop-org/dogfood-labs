@@ -20,6 +20,14 @@ echo "--- Portfolio tests ---"
 (cd tools/portfolio && node --test generate.test.js)
 
 echo ""
+echo "--- Findings tests ---"
+(cd tools/findings && npm ci --silent && npm test)
+
+echo ""
+echo "--- Findings validation ---"
+node tools/findings/cli.js validate --all
+
+echo ""
 echo "--- Schema validation ---"
 for schema in schemas/*.json; do
   node -e "JSON.parse(require('fs').readFileSync('$schema','utf-8'))" && echo "OK: $schema"

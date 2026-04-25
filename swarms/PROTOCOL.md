@@ -20,6 +20,7 @@ The protocol has two repeating passes and a final test phase:
 - **Health Pass** (Phases 1-4) — Audit and fix bugs, security, code quality, type safety, test coverage, doc accuracy. Repeat until clean bill of health.
 - **Feature Pass** (Phases 5-8) — Audit and build missing capabilities, feature gaps, UX improvements. Repeat until production-ready.
 - **Final** (Phase 9) — Comprehensive test validation.
+- **Full Treatment** (Phase 10) — Shipcheck, branding, landing page, handbook, translations, repo-knowledge DB. The repo is not "done" until it's whole.
 
 ---
 
@@ -231,7 +232,44 @@ Final comprehensive test pass validating everything works together.
 3. Verify no regressions from any wave.
 4. Record final test count and pass rate in manifest.
 5. If any failures, dispatch targeted fix agents and re-run.
-6. Mark manifest `status: "complete"`.
+6. Proceed to Phase 10 (Full Treatment).
+
+---
+
+## Full Treatment (Phase 10)
+
+The swarm is not complete until the repo receives the Full Treatment. This phase ensures the repo is not just working but *whole* — branded, documented, searchable, and catalogued.
+
+### Prerequisites
+
+- Phase 9 tests must be green.
+- Read `memory/full-treatment.md` AND `memory/handbook-playbook.md` from the canonical memory path before starting.
+- Shipcheck must pass: `npx @mcptoolshop/shipcheck audit` — if it fails, fix before proceeding.
+
+### Execution
+
+Follow the 7 phases from `full-treatment.md` in order:
+
+1. **Phase 0 — Shipcheck gate**: `npx @mcptoolshop/shipcheck init` + audit. Version bump (v0.x → v1.0.0, or patch bump).
+2. **Phase 1 — README + translations**: Logo, badges, footer. Hand user the translation command (user runs locally, NEVER Claude).
+3. **Phase 2 — Landing page**: `npx @mcptoolshop/site-theme init`, scaffold site-config, verify base path.
+4. **Phase 3 — Handbook**: `npx @mcptoolshop/site-theme handbook --accent <color>`, expand README into 3-7 real doc pages, build + verify.
+5. **Phase 4 — Repo metadata + coverage**: GitHub description/homepage/topics, coverage badge if applicable.
+6. **Phase 5 — Repo Knowledge DB**: `node dist/cli.js scan`, add thesis/architecture/relationships.
+7. **Phase 6 — Commit + deploy**: Stage explicitly (never `git add .`), push, verify landing page + handbook render.
+
+### Completion
+
+After Phase 7 (post-deploy verification) passes:
+- Mark manifest `status: "complete"`.
+- Record final metrics: test count, findings fixed, features shipped, treatment phases completed.
+
+### Do NOT
+
+- Skip any treatment phase — they are sequential and interdependent.
+- Run translations from Claude — user runs locally via Ollama (zero cost).
+- Skip the repo-knowledge DB entry — it's part of the swarm now.
+- Mark the swarm complete before the landing page + handbook are live.
 
 ---
 
@@ -274,7 +312,7 @@ Adjust domains to match the repo's architecture. The key constraint is that ever
   "commit_sha": "<HEAD commit>",
   "branch": "main",
   "started_at": "<ISO 8601>",
-  "status": "health-audit-a|health-audit-b|health-audit-c|review|amend|feature-audit|feature-review|execution|test|complete",
+  "status": "health-audit-a|health-audit-b|health-audit-c|review|amend|feature-audit|feature-review|execution|test|treatment|complete",
   "save_point_tag": "swarm-save-<timestamp>",
   "health_waves_completed": 0,
   "feature_waves_completed": 0,
@@ -303,7 +341,8 @@ Adjust domains to match the repo's architecture. The key constraint is that ever
 
 | Repo | Waves | Start Tests | End Tests | Findings Fixed |
 |------|-------|-------------|-----------|----------------|
-| claude-collaborate | Stage A (2 waves) + Stage B (1 proactive) + Stage C (1 humanization) | 35 | 71 | 106 |
+| claude-collaborate | Stage A (2) + B (1) + C (1) | 35 | 71 | 106 |
+| stillpoint | Stage A (3) + B (1) + C (2) + Feature (3) | 26 | 136 | 70 health + ~50 features |
 
 ---
 
@@ -340,6 +379,20 @@ FEATURE PASS
 
 FINAL
 15. [ ] Run comprehensive test pass
-16. [ ] Record final metrics in manifest
-17. [ ] Mark manifest complete
+16. [ ] Record final test count and pass rate
+
+FULL TREATMENT (Phase 10)
+17. [ ] Read full-treatment.md + handbook-playbook.md
+18. [ ] Shipcheck: npx @mcptoolshop/shipcheck audit (must exit 0)
+19. [ ] Version bump (v0.x → v1.0.0, or patch bump)
+20. [ ] Logo to brand repo, README finalized
+21. [ ] Hand user translation command (user runs locally)
+22. [ ] Scaffold landing page (site-theme init)
+23. [ ] Scaffold + write handbook (3-7 pages from README)
+24. [ ] Build + verify site: npm run build in site/
+25. [ ] GitHub metadata: description, homepage, topics
+26. [ ] Repo-knowledge DB: scan, thesis, architecture, relationships
+27. [ ] Commit + deploy (explicit staging, never git add .)
+28. [ ] Post-deploy verify: landing page, handbook, pagefind, CI green
+29. [ ] Mark manifest status: "complete"
 ```

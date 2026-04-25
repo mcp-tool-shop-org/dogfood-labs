@@ -1,3 +1,15 @@
+> ## ⚠ This repo has moved
+>
+> **`dogfood-labs` was renamed and folded into [`dogfood-lab/testing-os`](https://github.com/dogfood-lab/testing-os)** — the flagship monorepo of the new [Dogfood Lab](https://github.com/dogfood-lab) GitHub org.
+>
+> All seven tools (`verify`, `findings`, `ingest`, `report`, `portfolio`, `dogfood-swarm`, plus the JSON `schemas`) now live under `packages/*` in the new repo, scoped as `@dogfood-lab/*` (the trailing `s` is gone). All runtime data dirs (`policies/`, `indexes/`, `records/`, `swarms/`, etc.) are preserved at the same paths inside the new repo.
+>
+> **Consumers updated as of 2026-04-25:** `shipcheck` Gate F, `repo-knowledge` sync, `role-os` persist-bridge, and the `dogfood.yml` workflows in `ai-loadout`, `claude-guardian`, `glyphstudio`, and `site-theme` all point at the new repo.
+>
+> This repo is preserved read-only for historical evidence. New evidence should go to https://github.com/dogfood-lab/testing-os.
+
+---
+
 <p align="center">
   <a href="README.ja.md">日本語</a> | <a href="README.zh.md">中文</a> | <a href="README.es.md">Español</a> | <a href="README.fr.md">Français</a> | <a href="README.hi.md">हिन्दी</a> | <a href="README.it.md">Italiano</a> | <a href="README.pt-BR.md">Português (BR)</a>
 </p>
@@ -42,13 +54,17 @@ Proves, with auditable evidence, that each repo was actually exercised in a dogf
 
 ## Contracts
 
-The product is defined by three contracts:
+The system is defined by seven contracts:
 
 | Contract | What it defines | Schema |
 |----------|----------------|--------|
 | [Record](docs/record-contract.md) | What a dogfood run looks like | `schemas/dogfood-record.schema.json` |
 | [Scenario](docs/scenario-contract.md) | What constitutes a real dogfood exercise | `schemas/scenario.schema.json` |
 | [Policy](docs/policy-contract.md) | What rules the verifier enforces | `schemas/policy.schema.json` |
+| Finding | Evidence-bound lesson from a dogfood run | `schemas/dogfood-finding.schema.json` |
+| Pattern | Repeated lesson cluster (2+ accepted findings) | `schemas/dogfood-pattern.schema.json` |
+| Recommendation | Actionable guidance for future repos | `schemas/dogfood-recommendation.schema.json` |
+| Doctrine | Hardened portfolio rule earned from repetition | `schemas/dogfood-doctrine.schema.json` |
 
 ## Enforcement Tiers
 
@@ -60,13 +76,43 @@ The product is defined by three contracts:
 
 See [enforcement-tiers.md](docs/enforcement-tiers.md) for details.
 
+## Intelligence Layer
+
+Turns dogfood evidence into reusable portfolio memory:
+
+```
+record → finding → reviewed memory → pattern/doctrine → future guidance
+```
+
+- **8 derivation rules** extract candidate findings from verified records deterministically
+- **Review workflow** with state machine, merge, invalidation, and append-only event log
+- **Pattern clustering** groups 2+ accepted findings by shared dimensions
+- **Recommendations** generate actionable guidance from accepted patterns
+- **Doctrine** promotes strong patterns into hardened portfolio rules
+- **Advice bundles** answer "what should this project inherit?" by surface/mode/repo
+
+```bash
+# Get advice for a new MCP server repo
+node tools/findings/cli.js advise --surface mcp-server
+
+# Derive candidate findings from all records
+node tools/findings/cli.js derive --all --dry-run
+
+# Review a candidate finding
+node tools/findings/cli.js accept dfind-example --actor mike --reason "Strong evidence"
+
+# Export for repo-knowledge consumption
+node tools/findings/cli.js sync-export --json
+```
+
 ## Integration
 
 | System | Role |
 |--------|------|
-| dogfood-labs | Authoritative write store + policy authority |
+| dogfood-labs | Authoritative write store + policy authority + learning engine |
 | shipcheck | Enforcement consumer (Gate F) |
-| repo-knowledge | Query/index mirror (SQLite read model) |
+| repo-knowledge | Query/index mirror (SQLite read model + dogfood sync) |
+| role-os | Advice consumer for bootstrap/review contexts |
 | org audit | Portfolio consumer |
 
 ## Verify
@@ -75,20 +121,31 @@ See [enforcement-tiers.md](docs/enforcement-tiers.md) for details.
 bash verify.sh
 ```
 
-Runs all tests across verifier, ingestion, reporting, and portfolio tools (76+ tests).
+Runs all tests across verifier, ingestion, reporting, portfolio, and findings tools (290 tests).
 
 ## Repo Layout
 
 ```
 dogfood-labs/
-├─ schemas/                          # JSON Schema contracts
+├─ schemas/                          # JSON Schema contracts (7 schemas)
 ├─ records/                          # Accepted records (sharded)
 │  └─ _rejected/                     # Rejected records
+├─ findings/                         # Evidence-bound lessons (YAML)
+├─ patterns/                         # Repeated lesson clusters (YAML)
+├─ recommendations/                  # Actionable guidance (YAML)
+├─ doctrine/                         # Hardened portfolio rules (YAML)
+├─ reviews/                          # Append-only review event log
+├─ fixtures/findings/                # Test fixtures (valid + invalid)
 ├─ indexes/                          # Generated read indexes
 ├─ policies/
 │  ├─ global-policy.yaml
 │  └─ repos/<org>/<repo>.yaml        # Per-repo policies
 ├─ tools/
+│  ├─ findings/                      # Intelligence layer (221 tests)
+│  │  ├─ derive/                     # Derivation engine (8 rules)
+│  │  ├─ review/                     # Review workflow + state machine
+│  │  ├─ synthesis/                  # Pattern/recommendation/doctrine
+│  │  └─ advise/                     # Query, ranking, advice bundles
 │  ├─ ingest/                        # Central ingestion pipeline
 │  ├─ verify/                        # Verifier
 │  ├─ report/                        # Submission builder
@@ -117,9 +174,11 @@ dogfood-labs/
 
 See [operating-cadence.md](docs/operating-cadence.md) for full details.
 
-## Doctrine
+## Rollout Doctrine
 
 Rollout doctrine captures 10 rules learned from real failures during expansion. See [rollout-doctrine.md](docs/rollout-doctrine.md).
+
+The intelligence layer extends this with machine-derived doctrine from accepted patterns. See the [Intelligence Layer handbook page](https://mcp-tool-shop-org.github.io/dogfood-labs/handbook/intelligence-layer/) for details.
 
 ---
 

@@ -22,6 +22,9 @@ dogfood-labs is the centralized dogfood evidence system for mcp-tool-shop-org. I
 | **Scenario** | A YAML definition of what constitutes real exercise |
 | **Policy** | Per-repo rules governing enforcement and freshness |
 | **Surface** | The product type being dogfooded (CLI, desktop, web, etc.) |
+| **Finding** | An evidence-bound lesson extracted from dogfood runs |
+| **Pattern** | A repeated lesson cluster backed by 2+ accepted findings |
+| **Doctrine** | A hardened portfolio rule earned from repeated patterns |
 
 ## Current Coverage
 
@@ -31,6 +34,7 @@ dogfood-labs is the centralized dogfood evidence system for mcp-tool-shop-org. I
 
 - [Beginner's Guide](./beginners/) -- new to dogfood-labs? start here
 - [Architecture](./architecture/) -- how the system works
-- [Contracts](./contracts/) -- the three defining contracts
+- [Contracts](./contracts/) -- the seven defining contracts
 - [Operating Guide](./operating-guide/) -- day-to-day operations
 - [Integration](./integration/) -- how other systems consume dogfood status
+- [Intelligence Layer](./intelligence-layer/) -- how evidence becomes reusable portfolio memory
